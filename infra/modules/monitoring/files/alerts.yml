@@ -1,0 +1,28 @@
+groups:
+  - name: innovatech
+    rules:
+      - alert: EcsCpuHigh
+        expr: avg(aws_ecs_cpuutilization_average) > 70
+        for: 5m
+        annotations:
+          summary: "NGINX CPU > 70% (trigger voor scale-out)"
+      - alert: EcsMemoryHigh
+        expr: avg(aws_ecs_memory_utilization_average) > 80
+        for: 5m
+        annotations:
+          summary: "NGINX geheugen > 80% (OOM-risico)"
+      - alert: AlbHttp5xxRate
+        expr: 100 * sum(aws_applicationelb_httpcode_target_5xx_count_sum) / sum(aws_applicationelb_request_count_sum) > 1
+        for: 1m
+        annotations:
+          summary: "HTTP 5xx > 1% van het verkeer"
+      - alert: AlbLatencyHigh
+        expr: avg(aws_applicationelb_target_response_time_average) > 0.5
+        for: 3m
+        annotations:
+          summary: "Gemiddelde responstijd > 500 ms"
+      - alert: RdsCpuHigh
+        expr: avg(aws_rds_cpuutilization_average) > 85
+        for: 5m
+        annotations:
+          summary: "Database CPU > 85%"

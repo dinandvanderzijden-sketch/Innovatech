@@ -1,0 +1,86 @@
+name: Application (build, test, blue-green deploy)
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/app.yml"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-1          # CHANGE_ME als je een andere regio gebruikt
+  AWS_DEFAULT_REGION: eu-west-1
+  NAME_PREFIX: innovatech-prod   # zelfde als var.name in Terraform
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-test-push:
+    runs-on: [self-hosted, linux]
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bepaal image-naam
+        id: meta
+        run: |
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          REGISTRY="$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com"
+          echo "registry=$REGISTRY" >> "$GITHUB_OUTPUT"
+          echo "image=$REGISTRY/$NAME_PREFIX-web:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: docker build --build-arg GIT_SHA="$GITHUB_SHA" -t "${{ steps.meta.outputs.image }}" app/
+
+      - name: Test (container starten en /healthz controleren)
+        run: |
+          CID=$(docker run -d -p 127.0.0.1:18080:80 "${{ steps.meta.outputs.image }}")
+          trap 'docker rm -f "$CID" >/dev/null' EXIT
+          for i in $(seq 1 15); do
+            if curl -fsS http://127.0.0.1:18080/healthz; then exit 0; fi
+            sleep 2
+          done
+          echo "healthcheck faalde"; docker logs "$CID"; exit 1
+
+      - name: Push naar ECR
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${{ steps.meta.outputs.registry }}"
+          docker push "${{ steps.meta.outputs.image }}"
+
+  deploy:
+    needs: build-test-push
+    runs-on: [self-hosted, linux]
+    environment: prod
+    steps:
+      - name: Nieuwe task definition registreren met de nieuwe image
+        run: |
+          aws ecs describe-task-definition --task-definition "$NAME_PREFIX-web" --query taskDefinition > td.json
+          jq --arg IMG "${{ needs.build-test-push.outputs.image }}" \
+            '.containerDefinitions[0].image = $IMG
+             | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .deregisteredAt)' \
+            td.json > td-new.json
+          NEW_ARN=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
+          echo "NEW_TD_ARN=$NEW_ARN" >> "$GITHUB_ENV"
+
+      - name: Blue-green deployment via CodeDeploy
+        run: |
+          APPSPEC=$(jq -cn --arg td "$NEW_TD_ARN" \
+            '{version:"0.0",Resources:[{TargetService:{Type:"AWS::ECS::Service",Properties:{TaskDefinition:$td,LoadBalancerInfo:{ContainerName:"nginx",ContainerPort:80}}}}]}')
+          REVISION=$(jq -cn --arg c "$APPSPEC" '{revisionType:"AppSpecContent",appSpecContent:{content:$c}}')
+          DEPLOY_ID=$(aws deploy create-deployment \
+            --application-name "$NAME_PREFIX-web" \
+            --deployment-group-name "$NAME_PREFIX-web-dg" \
+            --description "Commit $GITHUB_SHA" \
+            --revision "$REVISION" \
+            --query deploymentId --output text)
+          echo "CodeDeploy deployment: $DEPLOY_ID"
+          aws deploy wait deployment-successful --deployment-id "$DEPLOY_ID"
