@@ -5,63 +5,177 @@ uitgerold en daarna door GitHub Actions beheerd: een self-hosted runner in de Hu
 `plan` en `apply` uit, bouwt de applicatie-image en zet die met een blue-green deployment
 uit op ECS Fargate.
 
+```mermaid
+flowchart LR
+    dev(["Ontwikkelaar"])
+    subgraph hub["HUB · 10.0.0.0/16"]
+        runner["GitHub Actions runner"]
+        nat["NAT Gateway"]
+    end
+    subgraph websp["WEB-SPOKE · 10.1.0.0/16"]
+        alb["ALB"]
+        ecs["ECS Fargate"]
+    end
+    subgraph datap["DATA-SPOKE · 10.3.0.0/16"]
+        rds[("RDS MariaDB")]
+    end
+    mon["Monitoring-EC2<br/>Prometheus · Grafana · YACE"]
+
+    dev -->|"push / PR"| runner
+    runner -->|"plan + apply + image"| alb
+    alb --> ecs
+    ecs -->|"3306 via TGW"| rds
+    runner --> nat
+    ecs -.->|"uitgaand via NAT"| nat
+    mon -.->|"haalt metrics"| ecs
+```
+
 > **Status van de applicatie:** de huidige image (`app/`) is een statische NGINX-pagina met een
 > `/healthz`-endpoint. Er is (nog) geen Flask- of Python-code in de repo. De ECS-taak krijgt wel
 > al `DB_HOST`, `DB_PORT`, `DB_USERNAME` en `DB_PASSWORD` als env-variabele, zodat een
 > applicatielaag zonder Terraform-wijzigingen kan worden toegevoegd. Zie
 > [Applicatielaag toevoegen](#applicatielaag-toevoegen).
 
+Alle diagrammen in dit document staan in [Mermaid](https://mermaid.js.org)-syntax en worden op
+GitHub automatisch getekend. Wil je er één aanpassen, plak het blok dan in de
+[Mermaid Live Editor](https://mermaid.live) om het direct te zien.
+
 ---
 
 ## Inhoudsopgave
 
-1. [Architectuur](#architectuur)
-2. [Wat staat waar](#wat-staat-waar)
-3. [Prerequisites](#prerequisites)
-4. [Eerste keer opzetten](#eerste-keer-opzetten)
-5. [Terraform-outputs](#terraform-outputs)
-6. [Hoe wijzig ik X](#hoe-wijzig-ik-x)
-7. [Hoe een deployment verloopt](#hoe-een-deployment-verloopt)
-8. [Lokaal ontwikkelen en testen](#lokaal-ontwikkelen-en-testen)
-9. [Testplan en acceptatie](#testplan-en-acceptatie)
-10. [Monitoring en dashboards](#monitoring-en-dashboards)
-11. [Afwijkingen t.o.v. het ontwerpdocument](#afwijkingen-ttov-het-ontwerpdocument)
-12. [Bekende beperkingen en operationele aandachtspunten](#bekendebeperkingen-en-operationele-aandachtspunten)
-13. [Kosten](#kosten)
-14. [Opruimen](#opruimen)
-15. [Troubleshooting](#troubleshooting)
-16. [Checklist voor overdracht](#checklist-voor-overdracht)
+1. [Architectuur](#architectuur) — netwerk, datastromen, componenten
+2. [Wat staat waar](#wat-staat-waar) — bestanden per requirement, CIDR-overzicht
+3. [Prerequisites](#prerequisites) — tools, versies, AWS-account
+4. [Eerste keer opzetten](#eerste-keer-opzetten) — zes stappen in de juiste volgorde
+5. [Terraform: modules en afhankelijkheden](#terraform-modules-en-afhankelijkheden)
+6. [Terraform-outputs](#terraform-outputs)
+7. [Hoe wijzig ik X](#hoe-wijzig-ik-x) — regio, naam-prefix, waarden, een extra spoke
+8. [Hoe een deployment verloopt](#hoe-een-deployment-verloopt) — infra, app, blue-green
+9. [Lokaal ontwikkelen en testen](#lokaal-ontwikkelen-en-testen)
+10. [Testplan en acceptatie](#testplan-en-acceptatie)
+11. [Monitoring en dashboards](#monitoring-en-dashboards)
+12. [Afwijkingen t.o.v. het ontwerpdocument](#afwijkingen-ttov-het-ontwerpdocument)
+13. [Bekende beperkingen en operationele aandachtspunten](#bekendebeperkingen-en-operationele-aandachtspunten)
+14. [Applicatielaag toevoegen](#applicatielaag-toevoegen)
+15. [Kosten](#kosten)
+16. [Opruimen](#opruimen)
+17. [Troubleshooting](#troubleshooting)
+18. [Checklist voor overdracht](#checklist-voor-overdracht)
 
 ---
 
 ## Architectuur
 
-```
-Internet
-   |
-   | :80 (HTTP)
-   v
-+---------------------------------------------------------------+
-|  HUB  10.0.0.0/16                                              |
-|  - 1x NAT Gateway (10.0.2.0/24, Internet Gateway)             |
-|  - 10.0.1.0/24 management: GitHub runner + monitoring          |
-+---------------------------------------------------------------+
-   ^                              ^
-   | TGW-attachment                | TGW-attachment
-+-----------------+        +-------+------------------------+
-|  SPOKE 1  WEB   |        |  SPOKE 3  DATA   10.3.0.0/16  |
-|  10.1.0.0/16    |        |  10.3.1.0/24, 10.3.2.0/24     |
-|                 |        |  geen IGW, geen internetroute   |
-|  - ALB publiek  |        |  NACL als 2e laag              |
-|    10.1.10/11   |        |  RDS MariaDB 10.11 Multi-AZ    |
-|  - ECS Fargate  |        |  (optioneel single-AZ)         |
-|    10.1.1/1.2   |        |                                |
-+-----------------+        +--------------------------------+
-   10.2.0.0/16 gereserveerd voor een toekomstige spoke
+### Netwerk topologie
 
-Spokes sturen 0.0.0.0/0 naar de TGW; de TGW routeert dat naar de NAT Gateway in de Hub.
-Verkeer tussen spokes loopt via TGW + Security Groups/NACL. De data-spoke heeft geen
-internetroute: het enige verkeer daarheen is MariaDB (3306) vanaf web-spoke en management.
+```mermaid
+flowchart TB
+    internet(["Internet"])
+
+    subgraph hub["HUB &nbsp;10.0.0.0/16"]
+        direction TB
+        igw["Internet Gateway"]
+        nat["NAT Gateway<br/>10.0.2.0/24 · AZ1"]
+        mgmt["10.0.1.0/24 · AZ1 · management<br/>GitHub runner (t3.small)<br/>Monitoring-EC2 (t3.small)"]
+        igw --- nat
+    end
+
+    tgw{{"Transit Gateway<br/>innovatech-prod-tgw"}}
+
+    subgraph web["SPOKE 1 &nbsp;WEB &nbsp;10.1.0.0/16"]
+        direction TB
+        alb["ALB &nbsp;innovatech-prod-alb<br/>:80 prod → Blue TG<br/>:8080 test → Green TG"]
+        pub1["10.1.10.0/24 · AZ1"]
+        pub2["10.1.11.0/24 · AZ2"]
+        ecs["ECS Fargate<br/>0.25 vCPU / 0.5 GB<br/>2–10 taken · geen public IP"]
+        priv1["10.1.1.0/24 · AZ1"]
+        priv2["10.1.2.0/24 · AZ2"]
+        pub1 --- alb
+        pub2 --- alb
+        priv1 --- ecs
+        priv2 --- ecs
+    end
+
+    subgraph data["SPOKE 3 &nbsp;DATA &nbsp;10.3.0.0/16"]
+        direction TB
+        nacl["NACL (stateless)<br/>2e verdedigingslaag"]
+        rds[("RDS MariaDB 10.11<br/>db.t4g.micro<br/>geen internetroute")]
+        s1["10.3.1.0/24 · AZ1"]
+        s2["10.3.2.0/24 · AZ2"]
+        s1 --- nacl
+        s2 --- nacl
+        nacl --- rds
+    end
+
+    reserved["10.2.0.0/16<br/>gereserveerd voor een extra spoke"]
+
+    internet -->|"HTTP :80"| alb
+    mgmt --- tgw
+    igw --- tgw
+    priv1 --- tgw
+    priv2 --- tgw
+    nacl --- tgw
+    tgw -->|"0.0.0.0/0 → NAT in de Hub"| nat
+    tgw -.-> reserved
+```
+
+**Uitleg bij het diagram**
+
+- De spokes sturen `0.0.0.0/0` naar de Transit Gateway; de TGW routeert dat naar de
+  NAT Gateway in de Hub. Zo is er één uitgaande route voor het hele netwerk.
+- Verkeer tussen spokes loopt via de TGW, afgeschermd met Security Groups en NACLs.
+- De data-spoke heeft géén Internet Gateway en géén internetroute. Het enige verkeer
+  daarheen is MariaDB (3306) vanaf de web-spoke en het management-subnet.
+- `10.2.0.0/16` is bewust leeg gelaten: daar kan later een spoke bij zonder dat je het
+  bestaande netwerk hoeft aan te passen.
+
+### Componenten en datastromen
+
+```mermaid
+flowchart LR
+    subgraph gh["GitHub"]
+        repo["Repository<br/>branches + Environment prod"]
+    end
+
+    subgraph runner["Self-hosted runner (Hub)"]
+        docker["Docker"]
+        tf["Terraform 1.10.5"]
+        tools["AWS CLI · jq · curl"]
+    end
+
+    subgraph webspoke["Web-spoke"]
+        ecs2["ECS Fargate<br/>NGINX :80"]
+    end
+
+    subgraph hubaws["AWS-account"]
+        ecr[("ECR<br/>innovatech-prod-web")]
+        cw["CloudWatch<br/>Logs / Metrics"]
+        sns["SNS topic<br/>innovatech-prod-alerts"]
+    end
+
+    subgraph datasp["Data-spoke"]
+        sm["Secrets Manager<br/>DB-wachtwoord"]
+        db[("RDS MariaDB<br/>appdb")]
+    end
+
+    subgraph mon["Monitoring-EC2 (Hub)"]
+        yace["YACE"]
+        prom["Prometheus :9090"]
+        graf["Grafana :3000"]
+        yace --> prom --> graf
+    end
+
+    repo -->|"push / PR"| runner
+    tf -->|"plan + apply"| runner
+    docker -->|"image met GIT_SHA"| ecr
+    ecs2 -->|"logs"| cw
+    cw -->|"YACE scrape"| yace
+    cw -->|"alarm → SNS"| sns
+    ecs2 -->|"3306, DB_HOST/PORT"| db
+    sm -->|"env bij task start"| ecs2
+    graf --> prom
+    ecr -.->|"image bij taakstart"| ecs2
 ```
 
 ### Rollen en verantwoordelijkheden
@@ -164,6 +278,27 @@ SSM Parameter Store, dus je AMI-update krijg je automatisch).
 De runner draait in het netwerk dat Terraform zelf bouwt. De eerste apply moet daarom
 handmatig; daarna loopt alles via GitHub.
 
+### Volgorde van de opzet
+
+```mermaid
+flowchart TD
+    s1["<b>Stap 1</b> — state-bucket aanmaken<br/>infra/bootstrap · lokaal of CloudShell"]
+    s2["<b>Stap 2</b> — bucket overnemen in<br/>infra/envs/prod/backend.tf"]
+    s3["<b>Stap 3</b> — terraform apply<br/>bouwt VPC's, ECS, RDS, runner, monitoring"]
+    s3b["<b>Stap 3b</b> — SNS-bevestigingsmail accepteren"]
+    s4["<b>Stap 4</b> — runner registreren bij GitHub<br/>via SSM-sessie, handmatig token"]
+    s5["<b>Stap 5</b> — Environment prod + branch protection"]
+    s6["<b>Stap 6</b> — push naar main<br/>infra.yml en app.yml gaan vanzelf draaien"]
+
+    s1 --> s2 --> s3 --> s3b --> s4 --> s5 --> s6
+
+    note1["De runner bestaat pas ná stap 3,<br/>maar draait de pipelines van stap 4 en 6.<br/>Daarom is de eerste apply handmatig."]
+    s3 -.-> note1
+```
+
+De volgorde is niet willekeurig: stap 2 moet vóór stap 3, omdat `terraform init` de backend
+vastlegt. En stap 4 kan pas ná stap 3, omdat de runner door Terraform wordt aangemaakt.
+
 ### Stap 1 — Maak de state-bucket (eenmalig, lokaal of in AWS CloudShell)
 
 ```bash
@@ -265,6 +400,51 @@ terraform output grafana_port_forward
 
 ---
 
+## Terraform: modules en afhankelijkheden
+
+`infra/envs/prod/main.tf` is de enige plek waar de modules aan elkaar gekoppeld worden. Zo
+zie je in één oogopslag wie wat nodig heeft.
+
+```mermaid
+flowchart TD
+    prov["<b>provider aws</b><br/>region + default_tags<br/>Project=innovatech · ManagedBy=terraform"]
+
+    az["<b>data.aws_availability_zones</b><br/>→ local.azs = eerste twee AZ's"]
+
+    net["<b>module.network</b><br/>Hub, web-spoke, data-spoke<br/>TGW, NAT, subnetten, NACL"]
+
+    db["<b>module.database</b><br/>RDS MariaDB 10.11<br/>+ Secrets Manager"]
+    web["<b>module.web</b><br/>ECR · ALB · ECS Fargate<br/>autoscaling · blue-green"]
+    runner["<b>module.runner</b><br/>GitHub Actions runner<br/>+ IAM instance profile"]
+    mon["<b>module.monitoring</b><br/>SNS + 5 CloudWatch-alarmen<br/>Prometheus · Grafana · YACE"]
+
+    prov --> net
+    az --> net
+    prov --> db
+    prov --> web
+    prov --> runner
+    prov --> mon
+
+    net -->|"data_vpc_id<br/>data_subnet_ids"| db
+    net -->|"web_vpc_id<br/>public + private subnet_ids"| web
+    net -->|"hub_vpc_id<br/>hub_mgmt_subnet_id"| runner
+    net -->|"hub_vpc_id<br/>hub_mgmt_subnet_id"| mon
+
+    db -->|"secret_arn (DB_USERNAME/PASSWORD)"| web
+    db -->|"address (DB_HOST)"| web
+
+    web -->|"cluster_name · service_name"| mon
+    web -->|"alb_arn_suffix"| mon
+    db -->|"instance_id"| mon
+    runner -.->|"voert de pipelines uit<br/>maakt geen data afhankelijk"| web
+```
+
+De koppeling `network → database → web → monitoring` is de ruggengraat: zonder de netwerk-
+module is er geen VPC, zonder `database` heeft de web-module geen secret, en zonder `web`
+weet het monitoring-EC2 niet welke cluster en load balancer het moet volgen.
+
+---
+
 ## Hoe wijzig ik X
 
 De meest voorkomende aanpassingen, met de plek waar je ze moet doorvoeren.
@@ -326,15 +506,33 @@ afspraken; `10.2.0.0/16` is daarvoor al gereserveerd.
 
 Trigger: elke pull request die `infra/**` raakt, en elke push naar `main` die dat doet.
 
-```
-fmt -check  ->  init  ->  validate  ->  plan
-                                   |
-                     PR: plan als commentaar
-                     main: plan als artifact
-                                   |
-        main + environment "prod" goedgekeurd
-                                   |
-                              apply <tfplan>
+```mermaid
+flowchart TD
+    trg(["<b>Trigger</b><br/>pull request op infra/**<br/>of push naar main"])
+
+    job1["<b>Job: plan</b> · self-hosted runner<br/>terraform fmt -check -recursive infra"]
+    init["terraform init -input=false"]
+    val["terraform validate"]
+    plan["terraform plan<br/>-lock-timeout=5m -out=tfplan"]
+
+    pr["github-script<br/>plan (laatste 60.000 tekens)<br/>als PR-commentaar"]
+    art["upload-artifact<br/>tfplan"]
+
+    gate{{"<b>Environment prod</b><br/>wacht op required reviewer"}}
+    apply["terraform apply<br/>-input=false -lock-timeout=5m tfplan"]
+
+    done(["klaar"])
+
+    trg --> job1 --> init --> val --> plan
+    plan -->|"pull_request"| pr
+    plan -->|"push naar main"| art
+    art --> gate
+    gate -->|"goedgekeurd"| apply --> done
+    gate -.->|"geweigerd"| stop(["geen wijziging"])
+    pr -.-> done
+
+    conc["<b>concurrency: terraform-prod</b><br/>maximaal 1 run tegelijk, wordt niet afgebroken"]
+    conc -.-> job1
 ```
 
 - De apply gebruikt het **goedgekeurde planbestand**, niet een nieuw plan. Wat je hebt
@@ -348,20 +546,74 @@ fmt -check  ->  init  ->  validate  ->  plan
 Trigger: elke push naar `main` die `app/**` raakt. Let op: `app.yml` draait **niet** op
 pull requests, dus de build wordt pas getest op `main`.
 
-```
-docker build (--build-arg GIT_SHA)  ->  start container  ->  curl /healthz  ->  push naar ECR
-                                                                              |
-                                              nieuwe task definition registreren
-                                                                              |
-                                    CodeDeploy: Green task set klaar  ->  verkeer schakelt om
-                                                                              |
-                                                        Blue wordt na 30 minuten afgebroken
+```mermaid
+flowchart TD
+    trg(["<b>Trigger</b><br/>push naar main op app/**"])
+
+    subgraph j1["Job: build-test-push"]
+        meta["aws sts get-caller-identity<br/>+ registry = ACCOUNT.dkr.ecr.eu-west-1…"]
+        build["docker build app/<br/>--build-arg GIT_SHA=$GITHUB_SHA<br/>tag = …-web:$SHA"]
+        test["docker run -p 127.0.0.1:18080:80<br/>curl /healthz · 15 × 2s retry"]
+        push["aws ecr get-login-password<br/>docker push"]
+        meta --> build --> test -->|"groen"| push
+        test -.->|"rood: exit 1 + logs"| fail(["deploy afgebroken"])
+    end
+
+    trg --> j1
+
+    subgraph j2["Job: deploy · environment prod"]
+        td["describe-task-definition<br/>jq: vervang containerDefinitions[0].image"]
+        reg["register-task-definition<br/>→ nieuwe ARN"]
+        cd["create-deployment<br/>AppSpecContent · beschrijving 'Commit SHA'"]
+        wait["aws deploy wait<br/>deployment-successful"]
+        td --> reg --> cd --> wait
+    end
+
+    push -->|"image staat in ECR"| td
+    wait --> ok(["succesvol"])
+    wait -.->|"DEPLOYMENT_FAILURE"| rb(["automatische rollback naar Blue"])
+
+    conc["<b>concurrency: app-deploy</b><br/>twee deploys overlappen niet"]
+    conc -.-> j1
 ```
 
 - De image-tag is de commit-SHA, dus een image is nooit dubbelzinnig.
+- De health check in `build-test-push` is de enige gate: bij een rood resultaat gaat er niets
+  naar ECR en start het deploy-job helemaal niet.
 - Bij een mislukte deployment rolt CodeDeploy automatisch terug
   (`auto_rollback_configuration` op `DEPLOYMENT_FAILURE`).
-- Ook `app.yml` gebruikt `concurrency: app-deploy`, dus twee deploys overlappen niet.
+- Ook `app.yml` gebruist `concurrency: app-deploy`, dus twee deploys overlappen niet.
+
+### Blue-green in detail
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as Ontwikkelaar
+    participant GH as GitHub Actions
+    participant ECR as ECR
+    participant CD as CodeDeploy
+    participant ALB as ALB
+    participant G as Green taken
+    participant B as Blue taken
+
+    U->>GH: push wijziging in app/
+    GH->>ECR: image met tag = commit-SHA
+    GH->>CD: create-deployment (nieuwe task definition)
+    Note over CD: WITH_TRAFFIC_CONTROL
+    CD->>G: start gelijke task set als Blue
+    ALB->>G: health check via /healthz op listener :8080
+    G-->>CD: gezond
+    CD->>ALB: verkeer :80 van Blue naar Green
+    Note over B: Blue blijft 30 minuten warm<br/>voor een snelle terugval
+    CD->>B: terminate na 30 minuten
+    CD-->>GH: deployment-successful
+```
+
+De twee listeners zijn belangrijk: poort 80 (prod) wijst naar de Blue-target-group en wordt
+door CodeDeploy omgezet, poort 8080 (test) wijst naar Green en wordt gebruikt om de nieuwe
+taken te valideren vóór het verkeer overschakelt. Terraform heeft op beide listeners
+`ignore_changes = [default_action]`, zodat het de schakeling van CodeDeploy niet terugdraait.
 
 ### Herleidbaarheid (REQ-08)
 
@@ -448,13 +700,31 @@ de target group markeert ze unhealthy.
 
 ## Monitoring en dashboards
 
-### Architectuur
+### Architectuur en meetketen
 
-```
-EC2 (Hub, management-subnet, geen inkomend verkeer)
-  +-- Prometheus :9090   scrape-interval 60s, TSDB-retentie 15 dagen
-  +-- Grafana     :3000   provisioned datasource + dashboard "Innovatech - Key metrics"
-  +-- YACE        :5000   haalt ECS-, ALB- en RDS-metrics uit CloudWatch
+```mermaid
+flowchart LR
+    subgraph aws["AWS · eu-west-1"]
+        cw[("CloudWatch<br/>Metrics")]
+        lg[("CloudWatch Logs<br/>/ecs/innovatech-prod")]
+    end
+
+    subgraph m["Monitoring-EC2 · Hub management-subnet<br/>docker compose · geen inkomend verkeer"]
+        yace["<b>YACE</b> :5000<br/>haalt ECS · ALB · RDS metrics<br/>uit CloudWatch"]
+        prom["<b>Prometheus</b> :9090<br/>scrape 60s · retentie 15 d<br/>alert rules uit alerts.yml"]
+        graf["<b>Grafana</b> :3000<br/>datasource: Prometheus + CloudWatch<br/>dashboard: Innovatech - Key metrics"]
+        yace -->|"aws_ecs_cpuutilization_average<br/>aws_applicationelb_request_count_sum<br/>aws_rds_cpuutilization_average"| prom
+        prom --> graf
+    end
+
+    cw -->|"GetMetricData / GetMetricStatistics<br/>IAM via instance profile (IMDSv2, hop 2)"| yace
+    lg -.->|"containerlogs"| cw
+    graf -.->|"langs de cluster-IP van Prometheus"| prom
+
+    alarms["<b>CloudWatch-alarmen</b> (5)<br/>CPU · geheugen · 5xx · latency · DB-CPU"]
+    sns[("SNS topic<br/>innovatech-prod-alerts")]
+    mail(["e-mailmelding<br/>na bevestiging van het abonnement"])
+    alarms --> sns --> mail
 ```
 
 YACE is nodig omdat `node_exporter` niet werkt op Fargate: er is geen host-node om te meten.
@@ -462,24 +732,66 @@ YACE exposeert de CloudWatch-metrics als Prometheus-metrics, waarvan de namen in
 `alerts.yml` worden gebruikt (`aws_ecs_cpuutilization_average`,
 `aws_applicationelb_request_count_sum`, enz.).
 
+```mermaid
+flowchart LR
+    subgraph jobs["YACE discovery jobs"]
+        j1["AWS/ECS<br/>CPUUtilization<br/>MemoryUtilization"]
+        j2["AWS/ApplicationELB<br/>RequestCount<br/>HTTPCode_Target_5XX_Count<br/>TargetResponseTime"]
+        j3["AWS/RDS<br/>CPUUtilization"]
+    end
+    j1 --> m1["6 panelen in het Grafana-dashboard"]
+    j2 --> m1
+    j3 --> m1
+    j1 --> m2["5 Prometheus-alertregels"]
+    j2 --> m2
+    j3 --> m2
+    style m2 stroke-dasharray: 5 5
+```
+
+De stippellijn staat voor de belangrijkste nuance: de Prometheus-regels zijn een **aanvullende,
+zichtbare kopie** in de Prometheus-UI. Alleen CloudWatch + SNS stuurt een mailmelding.
+
 ### CloudWatch-alarmen (met e-mail via SNS)
 
-| Alarm | Drempel | Duur |
-|---|---|---|
-| `cpu-high` | ECS CPU > 70% | 5 minuten |
-| `memory-high` | ECS geheugen > 80% | 5 minuten |
-| `alb-5xx-rate` | > 1% van de requests | 1 minuut |
-| `target-response-time` | ALB > 0,5 s gemiddeld | 3 minuten |
-| `db-cpu-high` | RDS CPU > 85% | 5 minuten |
+| Alarm | Drempel | Duur | Extra actie |
+|---|---|---|---|
+| `cpu-high` | ECS CPU > 70% | 5 minuten | — |
+| `memory-high` | ECS geheugen > 80% | 5 minuten | — |
+| `alb-5xx-rate` | > 1% van de requests | 1 minuut | — |
+| `target-response-time` | ALB > 0,5 s gemiddeld | 3 minuten | — |
+| `db-cpu-high` | RDS CPU > 85% | 5 minuten | — |
 
-De Prometheus-regels in `alerts.yml` zijn een aanvullende, zichtbare kopie in de
-Prometheus-UI (Alerts-pagina). De **mailmeldingen** komen alleen van CloudWatch + SNS;
-Prometheus is hier niet aan een notifier gekoppeld.
+Let op: de CPU-schaling in `modules/web` heeft een **eigen** alarmset (`scale-out-cpu-high` en
+`scale-in-cpu-low`) met dezelfde drempels, maar die stuurt geen mail — die stuurt een
+schaalactie. `cpu-high` in de monitoring-module is wél de variant met de mailmelding. Twee
+alarmen op dezelfde metriek is verwarrelijk om te debuggen; het staat zo omdat de
+schaalbeslissingen en de notificatie los van elkaar mogen evolueren.
 
 ### Grafana en Prometheus openen
 
 Beide poorten zitten achter een security group zonder inbound regels, dus je bereikt ze via
-een SSM-port-forward. Grafana is al als output beschikbaar:
+een SSM-port-forward.
+
+```mermaid
+flowchart LR
+    you(["Jouw laptop"])
+    session["aws ssm start-session<br/>AWS-StartPortForwardingSession"]
+    sg{"Security group<br/>innovatech-prod-monitoring<br/>alleen egress"}
+    ec2["Monitoring-EC2<br/>in het Hub management-subnet"]
+    g(("Grafana :3000"))
+    p(("Prometheus :9090"))
+    blocked(["externe bereiking geblokkeerd<br/>geen inbound regels"])
+
+    you --> session
+    session -->|"tunnel via SSM, geen open poort"| ec2
+    sg -.-> session
+    ec2 --> g
+    ec2 --> p
+    internet["Internet"] -.->|"geblokkeerd"| blocked
+    internet --> ec2
+```
+
+Grafana is al als output beschikbaar:
 
 ```bash
 cd infra/envs/prod
@@ -560,9 +872,26 @@ Neem deze punten over in je as-built documentatie.
   (`public.ecr.aws/nginx/nginx:stable-alpine`). De volgende push naar `app/` lost het op.
   Wil je dit structureel voorkomen, voeg dan `ignore_changes = [container_definitions]`
   toe aan de task definition.
-- **De ECS-service negeertTerraform-wijzigingen** op `task_definition`, `load_balancer` en
+- **De ECS-service negeert Terraform-wijzigingen** op `task_definition`, `load_balancer` en
   `desired_count` (die beheert CodeDeploy respectievelijk Auto Scaling). Een `plan` toont
   daarom geen wijzigingen als je die waarden aanpast — dat is bedoeld, geen bug.
+
+```mermaid
+flowchart TD
+    tf["Terraform<br/>modules/web/main.tf"] --> svc["<b>ECS-service</b><br/>desired_count · task_definition · load_balancer<br/>lifecycle ignore_changes → 3 velden"]
+    cd["CodeDeploy"] -->|"task definition + doel-TA"| svc
+    as["Auto Scaling"] -->|"aantal taken"| svc
+
+    tf --> td["<b>Task definition</b><br/>geen ignore_changes<br/>→ infra-apply kan de image terugzetten"]
+    appyml["app.yml"] -->|"register-task-definition<br/>met ECR-image + SHA"| td
+    cd -->|"nieuwe task set"| td
+
+    style svc stroke-width:2px
+    style td stroke-width:2px,stroke-dasharray: 5 5
+```
+
+De stippellijn markeert de valkuil uit de vorige bullet: de task definition wordt wél door
+Terraform beheerd, terwijl de service die eraan hangt dat niet doet.
 - **Een wijziging in de monitoring-bestanden vervangt de EC2-instance.**
   `user_data_replace_on_change = true` betekent dat een wijziging in `dashboard.json`,
   `prometheus.yml`, `alerts.yml` of de templates een nieuwe instance oplevert, met lege

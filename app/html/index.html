@@ -7,14 +7,33 @@
   <style>
     body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
     code { background: #eee; padding: .1rem .4rem; border-radius: 4px; }
+    .card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem 1.25rem; margin-top: 1.5rem; }
+    dt { font-weight: 600; }
+    dd { margin: 0 0 .5rem 0; }
   </style>
 </head>
 <body>
   <h1>Innovatech Ticketing</h1>
   <p>Deze pagina wordt geleverd door NGINX op AWS ECS Fargate.</p>
   <p>Versie (Git-commit): <code id="v">...</code></p>
+
+  <div class="card">
+    <h2>Deployment-check</h2>
+    <p>Als je deze wijziging op de live site ziet, werkt de CI/CD-pipeline end-to-end.</p>
+    <dl>
+      <dt>Commit op deze build</dt>
+      <dd><code id="sha">...</code></dd>
+      <dt>Health check</dt>
+      <dd><code><a href="/healthz">/healthz</a></code></dd>
+    </dl>
+  </div>
+
   <script>
-    fetch('/version.txt').then(r => r.text()).then(t => { document.getElementById('v').textContent = t.trim(); });
+    fetch('/version.txt').then(r => r.text()).then(t => {
+      const sha = t.trim();
+      document.getElementById('v').textContent = sha;
+      document.getElementById('sha').textContent = sha;
+    });
   </script>
 </body>
 </html>
