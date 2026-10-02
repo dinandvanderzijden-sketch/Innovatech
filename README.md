@@ -36,32 +36,216 @@ flowchart LR
 > applicatielaag zonder Terraform-wijzigingen kan worden toegevoegd. Zie
 > [Applicatielaag toevoegen](#applicatielaag-toevoegen).
 
+> **Status van de omgeving: gebouwd en draaiend** in AWS-account `491799435972`, regio
+> `eu-west-1`. Deze README is dus zowel de bouwhandleiding (voor een nieuw account) als de
+> beheerhandleiding (voor de huidige omgeving). Neem je deze omgeving over? Begin dan bij
+> [Overdracht — lees dit eerst](#overdracht--lees-dit-eerst).
+
 Alle diagrammen in dit document staan in [Mermaid](https://mermaid.js.org)-syntax en worden op
 GitHub automatisch getekend. Wil je er één aanpassen, plak het blok dan in de
 [Mermaid Live Editor](https://mermaid.live) om het direct te zien.
 
 ---
 
+## Overdracht — lees dit eerst
+
+De rest van dit document is de volledige runbook: architectuur, modules, pipelines, testplan.
+**Dit hoofdstuk is de samenvatting voor degene die het overneemt.** Het bevat de staat van de
+omgeving, wat je in je eerste uren moet doen, en wat er al bekend niet af is.
+
+> **De omgeving bestaat al en draait.** De sectie [Eerste keer opzetten](#eerste-keer-opzetten)
+> beschrijft een bouw vanaf nul en is alleen nodig voor een *nieuw* account. Jij start in een
+> bestaande omgeving: je hoeft niets te bouwen, maar je moet wél toegang krijgen en begrijpen
+> wat er staat.
+
+### Wat je overneemt
+
+| | |
+|---|---|
+| **Wat** | Een draaiende lab-omgeving (CS1-MA-NCA): hub-and-spoke VPC's, ECS Fargate met blue-green deployment, RDS MariaDB, een self-hosted GitHub Actions-runner en een Prometheus/Grafana-stack |
+| **Repository** | `github.com/dinandvanderzijden-sketch/Innovatech` (privé) |
+| **AWS-account** | `491799435972` |
+| **Regio** | `eu-west-1`, de enige regio. Staat op vier plekken hardcoded, zie [Regio wijzigen](#regio-wijzigen) |
+| **Naam-prefix** | `innovatech-prod` — bepaalt vrijwel alle resourcenamen én de ECR-/CodeDeploy-namen |
+| **Live URL** | <http://innovatech-prod-alb-449857654.eu-west-1.elb.amazonaws.com> |
+| **Vorige eigenaar** | Dinand van der Zijden — bereikbaar voor vragen en voor de credentials buiten deze repo |
+| **Nieuwe eigenaar** | *<invullen tijdens het overdrachtgesprek>* |
+
+### Staat van de omgeving
+
+Gecontroleerd in het AWS-account op **2 oktober 2026**:
+
+| Component | Status | Detail |
+|---|---|---|
+| VPC Hub | draait | `10.0.0.0/16` — NAT Gateway, runner, monitoring |
+| VPC Web | draait | `10.1.0.0/16` — ALB + ECS Fargate |
+| VPC Data | draait | `10.3.0.0/16` — RDS, geen internetroute |
+| Transit Gateway | draait | alle drie de VPC's zijn eraan vastgezet |
+| ALB | `active` | internet-facing, twee listeners (80 prod, 8080 test) |
+| ECS-cluster + service | 2 van 2 taken `running` | `innovatech-prod-cluster` / `innovatech-prod-web` |
+| Blue-target-group | 2 targets `healthy` | dit is het live verkeer |
+| Green-target-group | leeg | normaal na een geslaagde deployment |
+| RDS MariaDB | `available` | 10.11.18, `db.t4g.micro`, single-AZ, database `appdb` |
+| Runner (EC2 `t3.small`) | `running` | instance profile met **`AdministratorAccess`** |
+| Monitoring (EC2 `t3.small`) | `running` | Prometheus + Grafana + YACE, alleen via SSM bereikbaar |
+| ECR | `innovatech-prod-web` | bevat de image per commit-SHA |
+| CodeDeploy | 4 deploymenten, alle `Succeeded` | laatste op 2 oktober 2026, 07:32 UTC |
+| CloudWatch-alarmen | 7 aanwezig, 6 staan op `OK` | `scale-in-cpu-low` staat op `ALARM`; dat is normaal zolang het aantal taken op het minimum van 2 staat |
+| CloudWatch Logs | `/ecs/innovatech-prod` | 14 dagen retentie, ~1,7 MB aan logs |
+| Terraform state | S3 `innovatech-tfstate-dinand-4821` | key `prod/terraform.tfstate`, versiebeheer aan |
+| **SNS-alarmering** | **werkt niet** | alle drie de abonnementen staan op `PendingConfirmation`, dus er komt geen enkele alarmmail |
+
+### Je eerste dag
+
+Exact in deze volgorde. Elke stap heeft een controle; ga pas door als die groen is.
+
+**Stap 0 — vraag de toegang op. Dit gaat vóór alles en is het langzaamste deel.**
+
+Vraag expliciet aan de vorige eigenaar:
+
+- [ ] **Repo-toegang** tot `dinandvanderzijden-sketch/Innovatech`. Zonder dit kun je niets.
+- [ ] **AWS-toegang** tot account `491799435972`. Dit staat *niet* in Terraform: je hebt een
+      bestaande IAM-gebruiker of -rol nodig. Vraag welke rol je krijgt, of laat je IAM-rol aan.
+- [ ] **Secrets Manager-leesrechten** op het DB-wachtwoord, of laat het wachtwoord zelf sturen.
+      Het wachtwoord staat nergens in de repo.
+- [ ] **Het Grafana-wachtwoord** van de vorige eigenaar (de container start met de default
+      `admin`/`admin` en dwingt bij de eerste login een wijziging af).
+- [ ] **Wie de required reviewer is** in de GitHub Environment `prod`. Staat jouw account daar
+      niet, dan wacht elke apply én elke deploy op goedkeuring van iemand anders.
+
+**Stap 1 — kloon de repo**
+
+```bash
+git clone https://github.com/dinandvanderzijden-sketch/Innovatech.git
+cd Innovatech
+```
+
+**Stap 2 — controleer wie je bent in AWS**
+
+```bash
+aws configure
+aws sts get-caller-identity     # Account moet 491799435972 zijn
+```
+
+**Stap 3 — lees de state, deploy nog niets**
+
+De omgeving draait, dus `terraform init` geeft je toegang tot de *bestaande* state. Voer daarna
+alleen een `plan` uit en lees hem. Een `apply` is een wijziging, geen controle.
+
+```bash
+cd infra/envs/prod
+terraform init
+terraform plan -lock-timeout=5m
+```
+
+Verwacht: `No changes`, of hooguit één diff op de container-image (dat is een bekend en
+bedoeld gedrag, zie [Bekende beperkingen](#bekendebeperkingen-en-operationele-aandachtspunten)).
+Krijg je een grote diff waarin bestaande resources vervangen of vernietigd worden, **stop dan**.
+Ga dan eerst na wat `main` deed; forceer niets met een handmatige `apply`.
+
+**Stap 4 — controleer dat de site echt live is**
+
+```bash
+curl -i http://innovatech-prod-alb-449857654.eu-west-1.elb.amazonaws.com
+curl -fsS http://innovatech-prod-alb-449857654.eu-west-1.elb.amazonaws.com/healthz    # moet "ok" zijn
+curl -fsS http://innovatech-prod-alb-449857654.eu-west-1.elb.amazonaws.com/version.txt  # laatste commit-SHA
+```
+
+De SHA in `version.txt` moet overeenkomen met de laatste commit op `main`. Zo weet je zeker dat
+de live omgeving bij de code in je checkout hoort.
+
+**Stap 5 — open Grafana en Prometheus**
+
+```bash
+cd infra/envs/prod
+terraform output grafana_port_forward   # het volledige commando, kopieer het
+# daarna: http://localhost:3000
+```
+
+Voor Prometheus moet je het commando zelf samenstellen, zie
+[Grafana en Prometheus openen](#grafana-en-prometheus-openen). Beide poorten staan achter een
+security group zonder inbound regels; je bereikt ze dus uitsluitend via SSM. Daarvoor heb je
+SSM-toegang nodig — die zit in het IAM-beleid voor de runner.
+
+**Stap 6 — doe één echte wijziging, om te bewijzen dat je de pipeline in de hand hebt**
+
+Maak een kleine, zichtbare en omkeerbare wijziging in `app/html/index.html`, maak een branch,
+open een pull request en merge die naar `main`. Verwacht: `app.yml` bouwt de image, test op
+`/healthz`, pusht naar ECR en zet een blue-green deployment neer.
+
+Controleer daarna in de CodeDeploy-console dat de status op `Succeeded` eindigt en dat
+`/version.txt` de nieuwe SHA toont. **Documenteer de uitkomst in je eigen notities** — dit is
+het bewijs dat je de omgeving echt kunt deployen, en het is het moment om vast te stellen of
+de Environment-goedkeuring bij jou of bij iemand anders ligt.
+
+### Openstaande punten
+
+| # | Punt | Prio | Wat je moet doen |
+|---|---|---|---|
+| 1 | **Alarmering werkt niet.** Alle drie de SNS-abonnementen staan op `PendingConfirmation`, dus CloudWatch stuurt wel `ALARM` naar de topic maar er komt geen mail aan. Twee van de drie zijn restanten van `CHANGE_ME@example.com`. | **P1** | Zet `alert_email` in `infra/envs/prod/terraform.tfvars` op een geldig adres, ga via een PR + Environment-goedkeuring, bevestig het nieuwe abonnement en verwijder de `CHANGE_ME`-restanten in de AWS-console. Test daarna één alarm echt (verhoog tijdelijk `container_cpu` of verwijder één taak). |
+| 2 | `alert_email` staat op het persoonlijke e-mailadres van de vorige eigenaar. Wie wegloopt, neemt de alertering mee. | **P1** | Zet een team- of functioneel adres; dan valt een wegvallende eigenaar niet stil. |
+| 3 | De required reviewer van GitHub Environment `prod` is een persoon, geen team. | **P1** | Zet er minstens twee reviewers in, of een team. Anders blokkeert één vertrekker alle deploys. |
+| 4 | De runner draait met **`AdministratorAccess`**. | P2 | Verscherp `runner_policy_arn` naar least privilege, zie [Bekende beperkingen](#bekendebeperkingen-en-operationele-aandachtspunten). Doe dit voordat de omgeving verder wordt gedeeld. |
+| 5 | Alleen HTTP; geen HTTPS en geen domeinnaam. | P2 | Vereist een domein plus een ACM-certificaat en een listener-wijziging. Vraag of dat al besteld is. |
+| 6 | Er is **geen applicatielaag**: `app/` is een statische NGINX-pagina. | P2 | Zie [Applicatielaag toevoegen](#applicatielaag-toevoegen). Beslis of dit de volgende opdracht is. |
+| 7 | Grafana draakt op standaardcredentials. | P2 | Zet `GF_SECURITY_ADMIN_PASSWORD` of een OAuth-provider in de compose-bestanden. Let op: elke wijziging in `modules/monitoring/files` vervangt de EC2-instance. |
+| 8 | `db_multi_az` staat op `false` (single-AZ). | P3 | Bewuste kostenkeuze. Zet op `true` als de database echt data moet bevatten. |
+| 9 | In `infra/envs/prod/` ligt een `errored.tfstate` van een mislukte apply. | P3 | Niets mee doen; het bestand is lokaal en `gitignore`d. Verwijder het als je het niet meer vertrouwt. |
+| 10 | Het testplan is geschreven maar niet aantoonbaar afgerond. | P3 | Voer het uit en leg de resultaten vast, zie [Testplan en acceptatie](#testplan-en-acceptatie). |
+
+### Vraag dit tijdens het overdrachtgesprek
+
+Deze dingen staan nergens in de repo en zijn dus alleen bij de vorige eigenaar:
+
+- Wat is de opleverdatum, en is dit een afstuderend lab of gaat dit door naar een volgende fase?
+- Wat is het DB-wachtwoord (`dbadmin` op database `appdb`), of welke rol krijg ik in Secrets Manager?
+- Wat is het huidige Grafana-wachtwoord?
+- Is er een IAM-rol of gebruiker voor mij gemaakt, en welke rechten heeft die precies?
+- Is er een domeinnaam of ACM-certificaat besteld voor HTTPS?
+- Wanneer moet `db_multi_az` aan, en wie betaalt de kosten — tot wanneer moet de omgeving draaien?
+- Ligt er materiaal buiten deze repo? Denk aan het Analyse-, Ontwerp- en TCO-document, het
+  as-built-document, scripts, of een rubric.
+- Is er een bekende wens of eis die hier niet staat, bijvoorbeeld over schaalbaarheid of beveiliging?
+
+### Je eerste week
+
+- [ ] Toegang geregeld: repo, AWS-rol, Secrets Manager, Grafana-wachtwoord
+- [ ] `alert_email` omgezet naar een geldig, niet-persoonlijk adres (PR + apply)
+- [ ] SNS-abonnement bevestigd, `CHANGE_ME`-restanten verwijderd
+- [ ] Eén alarm daadwerkelijk getest: je hebt een alarm *gezien*, niet alleen geconfigureerd
+- [ ] Tweede reviewer toegevoegd aan GitHub Environment `prod`
+- [ ] Grafana-wachtwoord gewijzigd
+- [ ] `test_access_cidrs` bewust gekozen: leeg laten, of je eigen CIDR zodat je Green kunt bekijken
+- [ ] Eén echte app-deploy end-to-end gedaan via een pull request
+- [ ] `terraform plan` lokaal uitgevoerd en de diff begrepen
+- [ ] Testplan uitgevoerd, resultaten vastgelegd
+- [ ] Besproken welke punten uit [Bekende beperkingen](#bekendebeperkingen-en-operationele-aandachtspunten)
+      je in deze fase oplost, en welke je bewust accepteert
+- [ ] Deze README bijgewerkt: naam, alarmadres, en de state van de punten hierboven
+
+---
+
 ## Inhoudsopgave
 
-1. [Architectuur](#architectuur) — netwerk, datastromen, componenten
-2. [Wat staat waar](#wat-staat-waar) — bestanden per requirement, CIDR-overzicht
-3. [Prerequisites](#prerequisites) — tools, versies, AWS-account
-4. [Eerste keer opzetten](#eerste-keer-opzetten) — zes stappen in de juiste volgorde
-5. [Terraform: modules en afhankelijkheden](#terraform-modules-en-afhankelijkheden)
+1. [Overdracht — lees dit eerst](#overdracht--lees-dit-eerst) — staat nu, eerste dag, openstaande punten
+2. [Architectuur](#architectuur) — netwerk, datastromen, componenten
+3. [Wat staat waar](#wat-staat-waar) — bestanden per requirement, CIDR-overzicht
+4. [Prerequisites](#prerequisites) — tools, versies, AWS-account
+5. [Eerste keer opzetten](#eerste-keer-opzetten) — zes stappen, **alleen voor een nieuw account**
 6. [Terraform-outputs](#terraform-outputs)
-7. [Hoe wijzig ik X](#hoe-wijzig-ik-x) — regio, naam-prefix, waarden, een extra spoke
-8. [Hoe een deployment verloopt](#hoe-een-deployment-verloopt) — infra, app, blue-green
-9. [Lokaal ontwikkelen en testen](#lokaal-ontwikkelen-en-testen)
-10. [Testplan en acceptatie](#testplan-en-acceptatie)
-11. [Monitoring en dashboards](#monitoring-en-dashboards)
-12. [Afwijkingen t.o.v. het ontwerpdocument](#afwijkingen-ttov-het-ontwerpdocument)
-13. [Bekende beperkingen en operationele aandachtspunten](#bekendebeperkingen-en-operationele-aandachtspunten)
-14. [Applicatielaag toevoegen](#applicatielaag-toevoegen)
-15. [Kosten](#kosten)
-16. [Opruimen](#opruimen)
-17. [Troubleshooting](#troubleshooting)
-18. [Checklist voor overdracht](#checklist-voor-overdracht)
+7. [Terraform: modules en afhankelijkheden](#terraform-modules-en-afhankelijkheden)
+8. [Hoe wijzig ik X](#hoe-wijzig-ik-x) — regio, naam-prefix, waarden, een extra spoke
+9. [Hoe een deployment verloopt](#hoe-een-deployment-verloopt) — infra, app, blue-green
+10. [Lokaal ontwikkelen en testen](#lokaal-ontwikkelen-en-testen)
+11. [Testplan en acceptatie](#testplan-en-acceptatie)
+12. [Monitoring en dashboards](#monitoring-en-dashboards)
+13. [Afwijkingen t.o.v. het ontwerpdocument](#afwijkingen-ttov-het-ontwerpdocument)
+14. [Bekende beperkingen en operationele aandachtspunten](#bekendebeperkingen-en-operationele-aandachtspunten)
+15. [Applicatielaag toevoegen](#applicatielaag-toevoegen)
+16. [Kosten](#kosten)
+17. [Opruimen](#opruimen)
+18. [Troubleshooting](#troubleshooting)
+19. [Checklist voor overdracht](#checklist-voor-overdracht) — vóór, tijdens en na de overdracht
 
 ---
 
@@ -274,6 +458,11 @@ SSM Parameter Store, dus je AMI-update krijg je automatisch).
 ---
 
 ## Eerste keer opzetten
+
+> **Let op — alleen voor een nieuw account.** De huidige omgeving is al gebouwd; voer deze
+> stappen niet opnieuw uit. Neem je een bestaande omgeving over, volg dan
+> [Je eerste dag](#je-eerste-dag). Deze sectie blijft staan als referentie voor wie later een
+> tweede omgeving opzet (bv. een tweede regio of een oefenaccount).
 
 De runner draait in het netwerk dat Terraform zelf bouwt. De eerste apply moet daarom
 handmatig; daarna loopt alles via GitHub.
@@ -602,7 +791,7 @@ sequenceDiagram
     GH->>CD: create-deployment (nieuwe task definition)
     Note over CD: WITH_TRAFFIC_CONTROL
     CD->>G: start gelijke task set als Blue
-    ALB->>G: health check via /healthz op listener :8080
+    ALB->>G: health check via / op listener :8080
     G-->>CD: gezond
     CD->>ALB: verkeer :80 van Blue naar Green
     Note over B: Blue blijft 30 minuten warm<br/>voor een snelle terugval
@@ -983,7 +1172,8 @@ Let op:
 | `terraform apply` met een lock-fout | Er draait een andere run. Wacht of verhoog `-lock-timeout`. Forceer nooit een lock weg tenzij je zeker weet dat er geen run actief is |
 | `BucketAlreadyExists` bij stap 1 | Kies een andere `state_bucket_name`; bucketnamen zijn wereldwijd uniek |
 | `terraform init` verwijst naar de verkeerde bucket | Pas `bucket` in `infra/envs/prod/backend.tf` aan vóór `terraform init` |
-| Geen alarmmails | Accepteer de SNS-bevestigingsmail; controleer daarna of je adres in `alert_email` staat |
+| Geen alarmmails | Accepteer de SNS-bevestigingsmail; controleer daarna of je adres in `alert_email` staat. Controleer de abonneestatus in de AWS-console: `PendingConfirmation` betekent dat er nooit een mail aankomt, ook niet na een echt alarm |
+| Alarm verandert van ALARM naar OK, maar je zag niets | Idem: kijk in CloudWatch → Alarmen of de alarm daadwerkelijk `ALARM` is geweest. Zoek dan pas in de SNS-abonnementen naar de oorzaak |
 | `app.yml` stopt na "Test (container starten)" | De image serveert `/healthz` niet. Test lokaal met `curl` op poort 8080 |
 | `No deployment group` of `task definition not found` in `app.yml` | `NAME_PREFIX` in `app.yml` wijkt af van `name` in `terraform.tfvars` |
 | ECS-taken blijven `PENDING` | Controleer de security group van de taken, de subnetten en of de execution role het secret mag lezen |
@@ -995,11 +1185,30 @@ Let op:
 
 ## Checklist voor overdracht
 
+Deze checklist is in drieën gesplitst, omdat "overdracht" drie verschillende momenten kent.
+De eerste twee staan in [Overdracht — lees dit eerst](#overdracht--lees-dit-eerst); hieronder
+staat de samenvatting.
+
+### A. Vóór het overdrachtsgesprek — de vorige eigenaar
+
+Alles wat de nieuwe eigenaar nodig heeft, maar wat nergens in de repo staat:
+
+- [ ] AWS-toegang geregeld: welke IAM-rol krijgt de nieuwe eigenaar, en met welke rechten?
+- [ ] DB-wachtwoord overgedragen of leesrechten op Secrets Manager gegeven (`dbadmin`, database `appdb`)
+- [ ] Grafana-wachtwoord overgedragen
+- [ ] Repo-toegang toegevoegd (of een uitnodiging verstuurd)
+- [ ] Materialen buiten de repo benoemd: Analyse-/Ontwerp-/TCO-document, as-built, rubric
+- [ ] Besproken: blijft de omgeving draaien, en tot wanneer?
+
+### B. Tijdens de overdracht — samen doorlopen
+
+Loop deze punten mét de nieuwe eigenaar door, zodat je ziet dat ze begrepen worden:
+
 - [ ] `terraform.tfvars` gecontroleerd: `alert_email`, `name`, `db_multi_az`
 - [ ] Regio consistent in `terraform.tfvars`, `backend.tf` en beide workflows
 - [ ] `NAME_PREFIX` in `app.yml` gelijk aan `name` in `terraform.tfvars`
 - [ ] `runner_policy_arn` verscherpt van `AdministratorAccess`
-- [ ] GitHub Environment `prod` met verplichte reviewer
+- [ ] GitHub Environment `prod` met verplichte reviewer — **en minstens twee reviewers**
 - [ ] Branch protection op `main` met verplichte pull request
 - [ ] SNS-abonnement bevestigd; alarmschakel getest
 - [ ] Grafana-wachtwoord gewijzigd
@@ -1007,3 +1216,11 @@ Let op:
 - [ ] Kosten doorgerekend in de AWS Pricing Calculator
 - [ ] Bekende beperkingen uit dit document besproken en geprioriteerd
 - [ ] Opruimprocedure getest of in elk geval doorgenomen
+
+### C. Na de overdracht — de nieuwe eigenaar
+
+De eerste week, in volgorde. Zie [Je eerste week](#je-eerste-week) voor de uitgebreide lijst.
+
+- [ ] Alle punten uit [Je eerste dag](#je-eerste-dag) afgerond
+- [ ] Eén echte wijziging end-to-end gedeployed via een pull request
+- [ ] Deze README bijgewerkt met de nieuwe naam, het alarmadres en de afgeronde punten
