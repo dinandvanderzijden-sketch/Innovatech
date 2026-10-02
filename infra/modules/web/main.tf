@@ -444,7 +444,7 @@ resource "aws_codedeploy_deployment_group" "web" {
 
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 30
+      termination_wait_time_in_minutes = 1
     }
   }
 
