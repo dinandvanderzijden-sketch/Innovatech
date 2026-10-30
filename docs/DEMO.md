@@ -111,6 +111,13 @@ via SSM Session Manager. De scripts regelen de tunnels.
 Open <http://localhost:3000>. Gebruiker `admin`, wachtwoord:
 
 ```bash
+./scripts/grafana_password.sh
+```
+
+Of met de AWS CLI (vanuit de **root** van de repository, niet vanuit
+`scripts/`):
+
+```bash
 aws secretsmanager get-secret-value \
   --secret-id "$(terraform -chdir=infra output -raw grafana_admin_secret_arn)" \
   --query SecretString --output text | jq -r .admin_password
