@@ -34,9 +34,12 @@ jobs:
         with:
           terraform_version: "1.9.8"
 
+      # De rol-ARN is geen geheim: de trust policy beperkt wie hem mag
+      # aannemen tot deze repository. Een secret of variabele AWS_ROLE_ARN
+      # gaat voor op deze standaardwaarde.
       - name: Controleer AWS-rol
         env:
-          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
+          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
         run: |
           if [ -z "$ROLE_ARN" ]; then
             echo "::error::De repository-secret AWS_ROLE_ARN ontbreekt. Zet hem op de waarde van 'terraform -chdir=infra output -raw github_role_arn'."
@@ -47,7 +50,7 @@ jobs:
       - name: AWS-rechten via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Init met S3-backend
