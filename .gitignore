@@ -1,9 +1,10 @@
-<<<<<<< HEAD
 # Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
 *.tfplan
+tfplan
+plan.txt
 terraform.tfvars
 backend.tf
 crash.log
@@ -25,12 +26,4 @@ htmlcov/
 # Editors
 .vscode/
 .idea/
-=======
-.terraform/
-*.tfstate
-*.tfstate.*
-tfplan
-plan.txt
-crash.log
->>>>>>> d02232185fea829d3866c50ae36508636202949b
 .DS_Store

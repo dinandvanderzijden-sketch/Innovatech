@@ -25,7 +25,7 @@ beheerderssessie). De geschatte kosten staan in `docs/KOSTEN.md`; reken op
 ongeveer € 7 per dag zolang de omgeving aan staat.
 
 ```bash
-cd cs2-platform
+# vanuit de root van de repository
 cp infra/terraform.tfvars.example infra/terraform.tfvars
 ```
 
