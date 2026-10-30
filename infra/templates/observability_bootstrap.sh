@@ -7,11 +7,12 @@ exec > >(tee -a /var/log/cs2-bootstrap.log | logger -t cs2-bootstrap -s 2>/dev/c
 
 REGION="${region}"
 PARAM_PREFIX="${param_prefix}"
+PROMETHEUS_VERSION="3.1.0"
 LOKI_VERSION="3.4.2"
 GRAFANA_VERSION="11.5.2"
 ALLOY_VERSION="1.5.1"
 
-dnf install -y docker rsyslog unzip curl awscli-2
+dnf install -y docker rsyslog unzip awscli-2
 systemctl enable --now docker
 
 # ---------------------------------------------------------------- parameters
@@ -20,7 +21,6 @@ get_param() {
     --query Parameter.Value --output text
 }
 
-AMP_URL="$(get_param config/amp_remote_write_url)"
 LOKI_BUCKET="$(get_param config/loki_bucket)"
 ARTIFACTS_BUCKET="$(get_param config/artifacts_bucket)"
 GRAFANA_SECRET_ARN="$(get_param config/grafana_secret_arn)"
@@ -46,8 +46,34 @@ EOF
 systemctl enable --now rsyslog
 systemctl restart rsyslog
 
+# ---------------------------------------------------------------- Prometheus
+install -d -m 0755 /etc/prometheus /var/lib/prometheus
+
+cat >/etc/prometheus/prometheus.yml <<'EOF'
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+# De servers pushen zelf via remote-write (Grafana Alloy).
+scrape_configs: []
+EOF
+
+docker volume create prometheus-data >/dev/null
+
+docker run -d --name prometheus --restart=always --network host \
+  -v /etc/prometheus:/etc/prometheus:ro \
+  -v prometheus-data:/prometheus \
+  "prom/prometheus:v$PROMETHEUS_VERSION" \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --storage.tsdb.path=/prometheus \
+  --storage.tsdb.retention.time=30d \
+  --web.enable-remote-write-receiver \
+  --web.listen-address=0.0.0.0:9090
+
 # ---------------------------------------------------------------- Loki
-install -d -m 0755 /var/loki /etc/loki /opt/cs2
+install -d -m 0755 /etc/loki /opt/cs2
+# Loki draait als uid 10001 in de container.
+install -d -m 0755 -o 10001 -g 10001 /var/loki
 
 cat >/etc/loki/loki.yaml <<EOF
 auth_enabled: false
@@ -171,4 +197,4 @@ systemctl daemon-reload
 systemctl enable --now alloy
 
 echo "Bootstrap van de observability-host is klaar."
-echo "AMP remote write: $AMP_URL"
+echo "Prometheus: http://127.0.0.1:9090"

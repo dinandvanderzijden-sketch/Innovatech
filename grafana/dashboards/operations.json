@@ -32,7 +32,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -61,7 +61,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
           "legendFormat": "{{instance}}",
@@ -82,7 +82,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -111,7 +111,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))",
           "legendFormat": "{{instance}}",
@@ -132,7 +132,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -161,7 +161,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "100 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"} * 100)",
           "legendFormat": "{{instance}}",
@@ -182,7 +182,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -211,7 +211,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "sum by (instance) (rate(node_network_receive_bytes_total{device!=\"lo\"}[5m]))",
           "legendFormat": "{{instance}}",
@@ -232,7 +232,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -261,7 +261,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "node_load5",
           "legendFormat": "{{instance}}",
@@ -282,7 +282,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": "amp"
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -311,7 +311,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "amp"
+            "uid": "prometheus"
           },
           "expr": "time() - node_boot_time_seconds",
           "legendFormat": "{{instance}}",

@@ -76,6 +76,14 @@ resource "aws_security_group" "observability" {
     cidr_blocks = [var.platform_vpc_cidr, var.workload_vpc_cidr]
   }
 
+  ingress {
+    description = "Prometheus remote-write, alleen binnen de twee VPCs"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = [var.platform_vpc_cidr, var.workload_vpc_cidr]
+  }
+
   egress {
     description = "Uitgaand voor updates, S3 en AWS-APIs"
     from_port   = 0

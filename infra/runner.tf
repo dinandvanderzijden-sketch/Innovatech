@@ -67,9 +67,10 @@ resource "aws_instance" "workload" {
   key_name               = aws_key_pair.ansible.key_name
 
   user_data = templatefile("${path.module}/templates/workload_bootstrap.sh", {
-    region       = var.aws_region
-    param_prefix = local.param_prefix
-    loki_url     = "http://${local.observability_private_ip}:3100"
+    region         = var.aws_region
+    param_prefix   = local.param_prefix
+    loki_url       = "http://${local.observability_private_ip}:3100"
+    prometheus_url = "http://${local.observability_private_ip}:9090"
   })
   user_data_replace_on_change = true
 
@@ -92,7 +93,7 @@ resource "aws_instance" "workload" {
 
   depends_on = [
     aws_ssm_parameter.log_target,
-    aws_ssm_parameter.amp_remote_write_url,
+    aws_ssm_parameter.prometheus_url,
     aws_ssm_parameter.region,
     aws_key_pair.ansible,
   ]

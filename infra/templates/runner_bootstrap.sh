@@ -8,12 +8,12 @@ exec > >(tee -a /var/log/cs2-bootstrap.log | logger -t cs2-runner-bootstrap -s 2
 REGION="${region}"
 PARAM_PREFIX="${param_prefix}"
 
-dnf install -y docker git jq unzip tar python3 python3-pip awscli-2
+dnf install -y docker git jq unzip tar python3.11 python3.11-pip awscli-2
 systemctl enable --now docker
 usermod -aG docker ec2-user
 
 # ---------------------------------------------------------------- Ansible in eigen venv
-python3 -m venv /opt/ansible
+/usr/bin/python3.11 -m venv /opt/ansible
 /opt/ansible/bin/pip install --upgrade pip
 /opt/ansible/bin/pip install "ansible-core>=2.16,<2.18" boto3 botocore
 ln -sf /opt/ansible/bin/ansible /usr/local/bin/ansible

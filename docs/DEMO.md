@@ -17,8 +17,9 @@ Nodig op je laptop:
 | AWS CLI v2 | `aws --version` |
 | Session Manager-plugin | `session-manager-plugin` |
 | Terraform ≥ 1.6 | `terraform version` |
-| Docker | `docker version` |
+| Docker | `docker version` (optioneel; CodeBuild kan het overnemen) |
 | jq en Python 3 | `jq --version`, `python3 --version` |
+| boto3 | `python3 -c "import boto3"` (anders: `pip install --user boto3`) |
 
 Een AWS-account met voldoende rechten (de demo gaat uit van een
 beheerderssessie). De geschatte kosten staan in `docs/KOSTEN.md`; reken op
@@ -74,11 +75,13 @@ probeert dan te starten en blijft op **0 running tasks** staan. Dat is
 verwacht. Bouw en push nu de image:
 
 ```bash
-./scripts/build_push.sh
+./scripts/build_codebuild.sh     # bouwt in AWS, geen Docker nodig
+# of met Docker: ./scripts/build_push.sh
 ```
 
-Het script bouwt `soar/`, pusht naar ECR, registreert een nieuwe
-taakdefinitie en wacht tot de service stabiel is (2–4 minuten).
+`build_codebuild.sh` zipt `soar/`, uploadt naar S3, start het
+CodeBuild-project en wacht op de uitslag. Daarna krijgt de ECS-service een
+nieuwe deployment (2–4 minuten).
 
 Controleer daarna:
 
@@ -157,8 +160,8 @@ staan in private subnetten.
 Open Grafana en laat twee dashboards zien:
 
 1. **CS2 — Platformoperatie**: CPU, geheugen, schijf en netwerk per server.
-   De gegevens komen uit Amazon Managed Prometheus (AMP), niet uit
-   CloudWatch.
+   De gegevens komen uit de Prometheus-container op de observability-host,
+   niet uit CloudWatch.
 2. **CS2 — SOAR**: aantal verwerkte events, acties, fouten en de SQS-wachtrij.
 
 **Laat de logging zien** via Explore → Loki:
@@ -209,9 +212,13 @@ Laat het resultaat zien:
 
 ```bash
 curl http://localhost:8080/stats
-curl http://localhost:8080/audit/recent?limit=5 | jq .
+curl "http://localhost:8080/audit/recent?limit=5" | jq .
 ./scripts/show_audit.sh --latest
 ```
+
+> `/stats` is een teller per taak. Met twee SOAR-taken kan de ene taak nul
+> tonen terwijl de andere het event verwerkte. Gebruik `/audit/recent` (uit
+> Aurora) als je het totaal wilt laten zien.
 
 **Bewijs dat de blokkade echt is uitgevoerd:**
 

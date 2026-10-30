@@ -1,7 +1,6 @@
 # ---------------------------------------------------------------- metrics
-resource "aws_prometheus_workspace" "this" {
-  alias = "${local.name}-amp"
-}
+# Prometheus draait als container op de observability-host. Amazon Managed
+# Prometheus is in dit account geblokkeerd door een service control policy.
 
 # ---------------------------------------------------------------- opslag
 resource "aws_s3_bucket" "loki" {
@@ -205,7 +204,7 @@ resource "aws_instance" "observability" {
   }
 
   depends_on = [
-    aws_ssm_parameter.amp_remote_write_url,
+    aws_ssm_parameter.prometheus_url,
     aws_ssm_parameter.loki_bucket,
     aws_ssm_parameter.grafana_secret,
     aws_ssm_parameter.artifacts_bucket,
@@ -281,10 +280,10 @@ resource "aws_ssm_parameter" "region" {
   value = var.aws_region
 }
 
-resource "aws_ssm_parameter" "amp_remote_write_url" {
-  name  = "${local.param_prefix}/config/amp_remote_write_url"
+resource "aws_ssm_parameter" "prometheus_url" {
+  name  = "${local.param_prefix}/config/prometheus_url"
   type  = "String"
-  value = "${aws_prometheus_workspace.this.prometheus_endpoint}api/v1/remote_write"
+  value = "http://${local.observability_private_ip}:9090"
 }
 
 resource "aws_ssm_parameter" "loki_bucket" {
@@ -324,12 +323,12 @@ resource "aws_s3_object" "grafana_datasources" {
   bucket = aws_s3_bucket.artifacts.id
   key    = "grafana/provisioning/datasources/datasources.yml"
   content = templatefile("${path.module}/../grafana/provisioning/datasources/datasources.yml.tftpl", {
-    amp_url = aws_prometheus_workspace.this.prometheus_endpoint
-    region  = var.aws_region
+    prometheus_url = "http://127.0.0.1:9090"
+    region         = var.aws_region
   })
   etag = md5(templatefile("${path.module}/../grafana/provisioning/datasources/datasources.yml.tftpl", {
-    amp_url = aws_prometheus_workspace.this.prometheus_endpoint
-    region  = var.aws_region
+    prometheus_url = "http://127.0.0.1:9090"
+    region         = var.aws_region
   }))
 }
 
@@ -356,9 +355,9 @@ resource "aws_s3_object" "grafana_dashboard_soar" {
 
 # ---------------------------------------------------------------- alarms
 resource "aws_cloudwatch_metric_alarm" "workload_cpu" {
-  for_each = aws_instance.workload
+  count = length(aws_instance.workload)
 
-  alarm_name          = "${local.name}-cpu-${each.key}"
+  alarm_name          = "${local.name}-cpu-${count.index}"
   alarm_description   = "CPU boven 80% op een bewaakte server"
   namespace           = "AWS/EC2"
   metric_name         = "CPUUtilization"
@@ -370,7 +369,7 @@ resource "aws_cloudwatch_metric_alarm" "workload_cpu" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    InstanceId = each.value.id
+    InstanceId = aws_instance.workload[count.index].id
   }
 }
 
@@ -426,9 +425,9 @@ resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "workload_no_data" {
-  for_each = aws_instance.workload
+  count = length(aws_instance.workload)
 
-  alarm_name          = "${local.name}-no-data-${each.key}"
+  alarm_name          = "${local.name}-no-data-${count.index}"
   alarm_description   = "Geen metrics meer van een bewaakte server"
   namespace           = "AWS/EC2"
   metric_name         = "CPUUtilization"
@@ -440,7 +439,7 @@ resource "aws_cloudwatch_metric_alarm" "workload_no_data" {
   treat_missing_data  = "breaching"
 
   dimensions = {
-    InstanceId = each.value.id
+    InstanceId = aws_instance.workload[count.index].id
   }
 }
 

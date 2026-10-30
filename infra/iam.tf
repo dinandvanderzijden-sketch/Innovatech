@@ -50,19 +50,6 @@ resource "aws_iam_role_policy_attachment" "workload_ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-data "aws_iam_policy_document" "workload_amp" {
-  statement {
-    actions   = ["aps:RemoteWrite"]
-    resources = [aws_prometheus_workspace.this.arn]
-  }
-}
-
-resource "aws_iam_role_policy" "workload_amp" {
-  name   = "${local.name}-amp-remote-write"
-  role   = aws_iam_role.workload.id
-  policy = data.aws_iam_policy_document.workload_amp.json
-}
-
 resource "aws_iam_instance_profile" "workload" {
   name = "${local.name}-workload"
   role = aws_iam_role.workload.name
@@ -81,6 +68,12 @@ resource "aws_iam_role_policy_attachment" "observability_ssm" {
 
 data "aws_iam_policy_document" "observability" {
   statement {
+    sid       = "GrafanaSecret"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.grafana.arn]
+  }
+
+  statement {
     sid       = "LokiStorage"
     actions   = ["s3:ListBucket", "s3:GetBucketLocation"]
     resources = [aws_s3_bucket.loki.arn]
@@ -96,18 +89,6 @@ data "aws_iam_policy_document" "observability" {
     sid       = "ReadProvisioning"
     actions   = ["s3:GetObject", "s3:ListBucket"]
     resources = [aws_s3_bucket.artifacts.arn, "${aws_s3_bucket.artifacts.arn}/*"]
-  }
-
-  statement {
-    sid = "QueryMetrics"
-    actions = [
-      "aps:QueryMetrics",
-      "aps:GetSeries",
-      "aps:GetLabels",
-      "aps:GetMetricMetadata",
-      "aps:ListWorkspaces",
-    ]
-    resources = ["*"]
   }
 
   statement {

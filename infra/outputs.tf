@@ -78,9 +78,9 @@ output "soar_alb_dns" {
   value       = aws_lb.soar.dns_name
 }
 
-output "amp_remote_write_url" {
-  description = "Remote-write-endpoint van Amazon Managed Prometheus."
-  value       = "${aws_prometheus_workspace.this.prometheus_endpoint}api/v1/remote_write"
+output "prometheus_url" {
+  description = "Basis-URL van de self-hosted Prometheus op de observability-host."
+  value       = "http://${local.observability_private_ip}:9090"
 }
 
 output "ecr_repository_url" {
@@ -96,6 +96,16 @@ output "sqs_queue_url" {
 output "audit_bucket" {
   description = "S3-bucket met auditobjecten."
   value       = aws_s3_bucket.audit.bucket
+}
+
+output "artifacts_bucket" {
+  description = "S3-bucket met Grafana-provisioning, CodeBuild-bron en rapporten."
+  value       = aws_s3_bucket.artifacts.bucket
+}
+
+output "codebuild_project_name" {
+  description = "CodeBuild-project dat de SOAR-image bouwt."
+  value       = aws_codebuild_project.soar.name
 }
 
 output "loki_bucket" {

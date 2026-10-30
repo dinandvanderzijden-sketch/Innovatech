@@ -1,6 +1,6 @@
 #!/bin/bash
 # Bootstrap van een bewaakte Linux-server: rsyslog-forwarding en Grafana Alloy
-# voor metrics (naar AMP) en journald-logs (naar Loki).
+# voor metrics (naar Prometheus) en journald-logs (naar Loki).
 set -euo pipefail
 
 exec > >(tee -a /var/log/cs2-bootstrap.log | logger -t cs2-workload-bootstrap -s 2>/dev/console) 2>&1
@@ -8,9 +8,10 @@ exec > >(tee -a /var/log/cs2-bootstrap.log | logger -t cs2-workload-bootstrap -s
 REGION="${region}"
 PARAM_PREFIX="${param_prefix}"
 LOKI_URL="${loki_url}"
+PROM_URL="${prometheus_url}"
 ALLOY_VERSION="1.5.1"
 
-dnf install -y rsyslog unzip curl awscli-2
+dnf install -y rsyslog unzip awscli-2
 dnf install -y stress-ng || true
 systemctl enable --now rsyslog
 
@@ -19,7 +20,6 @@ get_param() {
     --query Parameter.Value --output text
 }
 
-AMP_URL="$(get_param config/amp_remote_write_url)"
 LOG_TARGET="$(get_param config/workload_log_target)"
 
 HOSTNAME_SHORT="$(hostname -s)"
@@ -58,7 +58,7 @@ prometheus.scrape "node" {
 }
 
 prometheus.relabel "instance" {
-  forward_to = [prometheus.remote_write.amp.receiver]
+  forward_to = [prometheus.remote_write.local.receiver]
 
   rule {
     target_label = "instance"
@@ -71,12 +71,9 @@ prometheus.relabel "instance" {
   }
 }
 
-prometheus.remote_write "amp" {
+prometheus.remote_write "local" {
   endpoint {
-    url = "$AMP_URL"
-    sigv4 {
-      region = "$REGION"
-    }
+    url = "$PROM_URL/api/v1/write"
   }
 }
 

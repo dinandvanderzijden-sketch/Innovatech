@@ -21,7 +21,7 @@ Legenda:
 | Workload-VPC `10.20.0.0/16` | `aws_vpc.workload` + private en public subnet | Gerealiseerd |
 | Transit Gateway als hub | `aws_ec2_transit_gateway` met twee attachments en eigen route tables | Gerealiseerd |
 | Zones DMZ / App / Data / Gereserveerd | DMZ `10.10.0.0/24`+`.1.0/24`, App `10.10.16.0/24`+`.17.0/24`, Data `10.10.32.0/24`+`.33.0/24` | Afwijkend: de zoneplannen zijn /20, de subnetten zijn /24-slices zodat elke zone in twee AZ's ligt. De gereserveerde /20 is ongebruikt. |
-| Private DNS `innovatech.internal` | `aws_route53_zone` met beide VPC's; records voor grafana, loki, soar, db, runner | Afwijkend: `prometheus` ontbreekt als naam, omdat AMP een beheerd AWS-endpoint heeft. |
+| Private DNS `innovatech.internal` | `aws_route53_zone` met beide VPC's; records voor grafana, loki, soar, db, runner | Afwijkend: `prometheus` ontbreekt als naam; de servers gebruiken het vaste IP `10.10.16.10:9090`. |
 | Deny-by-default | Security Groups met alleen de benodigde poorten | Afwijkend: NACL's staan op default. Security Groups zijn de leidende control. |
 | Network Firewall in de DMZ | Niet gebouwd; de firewall-API is een simulatie | Niet gebouwd (zie §2) |
 | Geen publieke SSH/RDP | SSM Session Manager; alleen poort 22 van runner naar workload | Gerealiseerd |
@@ -49,16 +49,25 @@ eindopdracht is het verdedigbaar om NACL's als bijkomende laag toe te voegen.
 | Ontwerp | In de code | Status |
 |---|---|---|
 | Grafana Alloy op de servers | Alloy verzamelt node-metrics en journald-logs | Gerealiseerd |
-| Metrics naar AMP | `prometheus.remote_write` met SigV4 naar AMP | Gerealiseerd |
+| Metrics naar Prometheus | `prometheus.remote_write` naar de Prometheus-container op `10.10.16.10:9090` | Afwijkend: geen AMP, zie hieronder. |
 | Logs naar Loki, opslag in S3 | Loki 3.x met S3-backend; Alloy op de servers | Gerealiseerd |
 | Syslog naar het platform | rsyslog op de workload → poort 6514 op de observability-host → Alloy → Loki | Gerealiseerd |
 | CloudWatch voor AWS-logs | Flow Logs, ECS-logs, Lambda-logs | Gerealiseerd |
 | Twee dashboards | `CS2 — Platformoperatie` en `CS2 — SOAR` | Gerealiseerd |
 | Vijf logbronnen | syslog, journald, VPC Flow Logs, SOAR-logs, CloudWatch/Lambda | Afwijkend: Windows Event Log en auditd ontbreken (zie §5). |
 | Zelfbewaking | Alarmen op 5XX, ongezonde taken, verwerkingsfouten, DLQ, ontbrekende data | Gerealiseerd |
-| 150 dagen metrics | AMP bewaart standaard 150 dagen | Gerealiseerd |
+| 150 dagen metrics | Prometheus bewaart 30 dagen op de eigen schijf | Afwijkend: kortere retentie dan het ontwerp; verlengen kan met een grotere EBS-volume. |
 | 30 dagen logs + 90 dagen archief | Loki 30 dagen; S3 is de archiefopslag | Afwijkend: CloudWatch-logs bewaren 14–30 dagen; er is geen aparte 90-daagse export. |
 | Audit minimaal een jaar | S3-levensduur 365 dagen; Aurora blijft staan | Gerealiseerd (tenzij je `audit_retention_days` verlaagt) |
+
+### Waarom geen Amazon Managed Prometheus?
+
+Het account waarin de demo draait, heeft een service control policy die
+`aps:CreateWorkspace` blokkeert. Daarom draait Prometheus als container op
+de observability-host, met dezelfde remote-write-API. Grafana, Alloy en de
+dashboards zijn ongewijzigd; alleen het endpoint is anders. In een account
+zonder die beperking vervang je de container door een AMP-workspace en zet je
+`prometheus_url` op de AMP-endpoint.
 
 ### Transportversleuteling
 
@@ -74,7 +83,7 @@ certificaatbeheer en extra kosten te vermijden.
 | Veel mislukte logins (10 per bron in 5 min) | Niet als automatische detectie. De SOAR-regel R-100 reageert op een binnengekomen bevinding; er is geen metric filter op syslog. |
 | SOAR-actie mislukt (>20% in 5 min) | Afwijkend: alarm op `ProcessingErrors ≥ 1` per 5 min, niet op een percentage. |
 | SOAR-server niet bereikbaar (>2 min) | Gerealiseerd via `UnHealthyHostCount` (2 × 60 s). |
-| Server bijna vol (CPU/disk >90%) | Afwijkend: CPU-alarm op 80%; disk zit niet in CloudWatch (Alloy levert schijfmetrics aan AMP, niet aan CloudWatch). |
+| Server bijna vol (CPU/disk >90%) | Afwijkend: CPU-alarm op 80%; disk zit niet in CloudWatch (Alloy levert schijfmetrics aan Prometheus, niet aan CloudWatch). |
 | Geen data (5 min) | Gerealiseerd met `treat_missing_data = breaching`. |
 | DLQ niet leeg | Gerealiseerd (aanvulling op het ontwerp). |
 
@@ -152,6 +161,7 @@ bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
 | OIDC, geen access keys | `aws_iam_openid_connect_provider` + rol | Gerealiseerd |
 | Rol met minimale rechten | `AdministratorAccess` op de OIDC-rol | Afwijkend: demo. In productie opsplitsen per workflow. |
 | Image met commit-SHA | `deploy-soar.yml` pusht `:${{ github.sha }}` en `:latest` | Gerealiseerd |
+| Image bouwen zonder Docker | `aws_codebuild_project` + `scripts/build_codebuild.sh` | Aanvulling: handig als de werkplek geen Docker heeft. |
 | Rollback bij falen | ECS deployment circuit breaker | Gerealiseerd |
 | Pipeline is de enige weg | Consolewijzigingen zijn mogelijk | Afwijkend: niet technisch afgedwongen (SCP/permissions boundary ontbreekt). |
 
@@ -166,7 +176,7 @@ bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
 | P2-03 Database en diensten privé | Ja, met uitzondering | Aurora en ALB zijn privé; de firewall-API is publiek met API-key. |
 | P2-04 Private DNS | Ja | Route 53-zone met beide VPC's. |
 | P1-05 Centrale updates | Ja | Wekelijkse workflow + handmatige run; tweede run `changed=0`. |
-| P2-06 Observability-stack | Ja | Grafana, Alloy, AMP, Loki, S3. |
+| P2-06 Observability-stack | Ja | Grafana, Alloy, Prometheus, Loki, S3. |
 | P2-07 Twee logbronnen | Ja | Syslog, journald, flow logs, SOAR-logs. |
 | P2-08 SOAR automatisch en geïsoleerd | Ja | EventBridge → SQS → ECS → acties; eigen IAM. |
 | P2-09 SOAR bewaakt zichzelf | Ja | Dashboard + alarmen op fouten, DLQ, 5XX en ongezonde taken. |

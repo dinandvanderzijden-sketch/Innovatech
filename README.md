@@ -13,11 +13,11 @@ in AWS (`eu-central-1`), zonder on-premises componenten, VPN of BGP.
 |---|---|
 | Netwerk | Platform-VPC `10.10.0.0/16` + Workload-VPC `10.20.0.0/16`, verbonden met een Transit Gateway |
 | Toegang | SSM Session Manager; geen publieke SSH/RDP en geen bastion |
-| Observability | Grafana + Loki op een private EC2, Grafana Alloy op de servers, AMP voor metrics, CloudWatch voor AWS-logs en flow logs |
+| Observability | Grafana + Loki + Prometheus op een private EC2, Grafana Alloy op de servers, CloudWatch voor AWS-logs en flow logs |
 | SOAR | FastAPI op ECS Fargate (2 taken), interne ALB, SQS + DLQ, EventBridge, DynamoDB-dedupe, Lambda-acties |
 | Audit | Aurora Serverless v2 (append-only tabel) + S3 met versioning |
 | Updates | Ansible via GitHub Actions op een self-hosted runner; SSH-sleutel in SSM |
-| CI/CD | GitHub Actions met OIDC naar AWS; `ci.yml`, `deploy-soar.yml`, `ansible-update.yml` |
+| CI/CD | GitHub Actions met OIDC naar AWS; `ci.yml`, `deploy-soar.yml`, `ansible-update.yml`; CodeBuild voor image-builds zonder Docker |
 | Firewall | Gesimuleerde firewall-API: API Gateway → Lambda → DynamoDB |
 
 ## Snel starten
@@ -30,7 +30,9 @@ cp infra/terraform.tfvars.example infra/terraform.tfvars
 terraform -chdir=infra init
 terraform -chdir=infra apply
 
-./scripts/build_push.sh          # eerste keer: de ECR-repo is nog leeg
+./scripts/build_codebuild.sh     # eerste keer: bouwt de image in AWS (geen Docker nodig)
+# of, met Docker op je laptop: ./scripts/build_push.sh
+
 ./scripts/register_runner.sh <github-pat> <owner/repo>   # optioneel
 ```
 
@@ -94,7 +96,8 @@ in **[docs/ONTWERP-VS-CODE.md](docs/ONTWERP-VS-CODE.md)**. De belangrijkste:
 
 - Terraform ≥ 1.6 (ontwikkeld met 1.15)
 - AWS CLI v2 met Session Manager-plugin
-- Docker (voor het bouwen van de SOAR-image)
+- Docker (optioneel; zonder Docker gebruik je `./scripts/build_codebuild.sh`)
+- `boto3` voor `scripts/send_event.py` (`python3 -m pip install --user boto3`)
 - `jq` en Python 3 voor de demo-scripts
 - Een GitHub-repository (voor OIDC en de runner)
 

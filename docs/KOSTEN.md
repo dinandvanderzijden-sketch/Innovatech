@@ -35,12 +35,13 @@ workloadservers, twee SOAR-taken.
 | ECS Fargate (0,5 vCPU + 1 GB) | $ 0,0247/uur per taak | 2 | $ 36,00 |
 | Aurora Serverless v2 (2 instanties) | $ 0,12/ACU-uur | 0–2 ACU elk | $ 20 – 60,00 |
 | Aurora-opslag | $ 0,10/GB-maand | ~1 GB | $ 0,10 |
-| Amazon Managed Prometheus | $ 0,09/GB ingest | < 1 GB | $ 0 – 2,00 |
+| Prometheus (container op de observability-host) | inbegrepen | — | $ 0,00 |
 | S3 (drie buckets) | $ 0,0245/GB-maand | < 5 GB | $ 0,15 |
 | CloudWatch Logs | ~$ 0,60/GB ingest | < 2 GB | $ 0 – 1,50 |
 | Secrets Manager | $ 0,40/secret | 4 | $ 1,60 |
 | Route 53 private zone | $ 0,50/zone | 1 | $ 0,50 |
 | SQS, SNS, Lambda, DynamoDB, API Gateway | verbruik | klein | < $ 1,00 |
+| CodeBuild (image-build) | $ 0,005/minuut | ± 5 min per deploy | < $ 0,10 |
 | **Totaal** | | | **± $ 285** |
 
 Aurora Serverless v2 staat op `min_capacity = 0`. Zonder verbindingen schaalt
