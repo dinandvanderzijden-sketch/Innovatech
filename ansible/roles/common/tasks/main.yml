@@ -1,0 +1,6 @@
+---
+- name: Basisinrichting van een bewaakte server
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Tijdzone en tijdsynchronisatie
+  ansible.builtin.import_tasks: time.yml

@@ -1,0 +1,30 @@
+---
+- name: Werk alle pakketten bij
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+  register: dnf_update
+  retries: 2
+  delay: 10
+  until: dnf_update is succeeded
+
+- name: Controleer of een herstart nodig is
+  ansible.builtin.command: dnf needs-restarting -r
+  register: needs_restart
+  changed_when: false
+  failed_when: false
+
+- name: Herstart de server als dat nodig is
+  ansible.builtin.reboot:
+    reboot_timeout: 900
+    msg: "Herstart na beveiligingsupdates"
+  register: reboot_result
+  when: needs_restart.rc | default(0) == 1
+
+- name: Meld de uitkomst
+  ansible.builtin.debug:
+    msg: >-
+      Pakketten bijgewerkt: {{ dnf_update.changed }}.
+      Herstart nodig: {{ needs_restart.rc | default(0) == 1 }}.
+      Herstart uitgevoerd: {{ reboot_result.changed | default(false) }}.

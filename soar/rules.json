@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "R-110",
+      "name": "Aanval vanaf een IP-adres",
+      "enabled": true,
+      "priority": 200,
+      "severity": "high",
+      "min_severity": "medium",
+      "sources": ["cs2.demo", "aws.guardduty"],
+      "detail_types": ["CS2 Security Finding"],
+      "title_regex": "(?i)(attack|scan|brute|firewall|recon)",
+      "require_source_ip": true,
+      "actions": ["block_ip", "notify"]
+    },
+    {
+      "id": "SOAR-003",
+      "name": "Malware of command-and-control",
+      "enabled": true,
+      "priority": 180,
+      "severity": "critical",
+      "min_severity": "medium",
+      "sources": ["cs2.demo", "aws.guardduty"],
+      "detail_types": ["CS2 Security Finding"],
+      "title_regex": "(?i)(malware|ransom|c2|beacon|command.and.control)",
+      "actions": ["quarantine", "notify"]
+    },
+    {
+      "id": "R-120",
+      "name": "Misbruik van rechten (privilege-escalatie)",
+      "enabled": true,
+      "priority": 150,
+      "severity": "critical",
+      "min_severity": "critical",
+      "sources": ["cs2.demo", "aws.guardduty"],
+      "detail_types": ["CS2 Security Finding"],
+      "title_regex": "(?i)(privilege|sudo|escalat)",
+      "actions": ["notify"]
+    },
+    {
+      "id": "SOAR-005",
+      "name": "Platformalarm (SOAR of load balancer)",
+      "enabled": true,
+      "priority": 120,
+      "severity": "high",
+      "min_severity": "medium",
+      "sources": ["aws.cloudwatch"],
+      "detail_types": ["CloudWatch Alarm State Change"],
+      "title_regex": "(?i)(5xx|unhealthy|soar|dlq|no-data)",
+      "actions": ["notify"]
+    },
+    {
+      "id": "R-100",
+      "name": "Veel mislukte logins",
+      "enabled": true,
+      "priority": 100,
+      "severity": "high",
+      "min_severity": "high",
+      "sources": ["cs2.demo", "aws.guardduty"],
+      "detail_types": ["CS2 Security Finding"],
+      "title_regex": "(?i)(login|auth|credential)",
+      "require_source_ip": true,
+      "actions": ["notify"]
+    },
+    {
+      "id": "SOAR-001",
+      "name": "Hoge CPU-belasting",
+      "enabled": true,
+      "priority": 50,
+      "severity": "medium",
+      "min_severity": "medium",
+      "sources": ["aws.cloudwatch"],
+      "detail_types": ["CloudWatch Alarm State Change"],
+      "title_regex": "(?i)cpu",
+      "actions": ["notify"]
+    },
+    {
+      "id": "SOAR-006",
+      "name": "Kritieke bevinding: altijd melden",
+      "enabled": true,
+      "priority": 10,
+      "severity": "critical",
+      "min_severity": "critical",
+      "actions": ["notify"]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+---
+observability_host: "10.10.16.10"
+loki_port: 3100
+syslog_port: 6514
+timezone: UTC
+aws_region: eu-central-1
+artifacts_bucket: "{{ lookup('amazon.aws.aws_ssm', '/cs2/dev/config/artifacts_bucket', region=aws_region) }}"

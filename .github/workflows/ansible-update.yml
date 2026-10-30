@@ -1,0 +1,37 @@
+name: Wekelijkse updates
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ansible:
+    name: Ansible-update op de bewaakte servers
+    runs-on: [self-hosted, cs2-runner]
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collecties installeren
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Controleren of de hosts bereikbaar zijn
+        run: ansible all -m ping --limit role_workload
+
+      - name: Eerste update-run
+        run: ansible-playbook playbooks/update.yml | tee run1.log
+
+      - name: Tweede run moet changed=0 opleveren
+        run: |
+          set -o pipefail
+          ansible-playbook playbooks/update.yml | tee run2.log
+          if grep -Eq 'changed=[1-9]' run2.log; then
+            echo "De tweede run bevat wijzigingen; de configuratie is niet idempotent." >&2
+            exit 1
+          fi

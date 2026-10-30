@@ -1,0 +1,27 @@
+---
+- name: Controleer of de Alloy-agent aanwezig is
+  ansible.builtin.stat:
+    path: /usr/local/bin/alloy
+  register: alloy_binary
+
+- name: Waarschuw als de agent ontbreekt
+  ansible.builtin.debug:
+    msg: >-
+      De Alloy-agent ontbreekt op {{ inventory_hostname }}. De user-data is
+      mogelijk niet uitgevoerd; vervang de instance of voer het
+      bootstrap-script opnieuw uit.
+  when: not alloy_binary.stat.exists
+
+- name: Zorg dat de Alloy-agent draait
+  ansible.builtin.service:
+    name: alloy
+    state: started
+    enabled: true
+  when: alloy_binary.stat.exists
+
+- name: Controleer of Loki bereikbaar is
+  ansible.builtin.wait_for:
+    host: "{{ observability_host }}"
+    port: "{{ loki_port }}"
+    timeout: 10
+  failed_when: false

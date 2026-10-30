@@ -1,0 +1,55 @@
+---
+- name: Beveiligingsupdates en baselines op de bewaakte servers
+  hosts: role_workload
+  become: true
+  # Eerst één server, daarna de rest. Bij meer servers kun je hier
+  # [1, "25%", "100%"] gebruiken.
+  serial: 1
+
+  pre_tasks:
+    - name: Controleer of de host bereikbaar is
+      ansible.builtin.ping:
+
+    - name: Controleer de vrije schijfruimte
+      ansible.builtin.assert:
+        that:
+          - (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first) > 536870912
+        fail_msg: "Minder dan 512 MB vrij op /."
+        quiet: true
+
+  roles:
+    - common
+    - updates
+    - observability_agent
+
+  post_tasks:
+    - name: Stel het updaterapport samen
+      ansible.builtin.set_fact:
+        update_report:
+          host: "{{ inventory_hostname }}"
+          generated_at: "{{ ansible_date_time.iso8601 }}"
+          distribution: "{{ ansible_distribution }} {{ ansible_distribution_version }}"
+          kernel: "{{ ansible_kernel }}"
+          packages_changed: "{{ dnf_update.changed | default(false) }}"
+          reboot_required: "{{ needs_restart.rc | default(0) == 1 }}"
+          rebooted: "{{ reboot_result.changed | default(false) }}"
+          alloy_active: "{{ alloy_binary.stat.exists | default(false) }}"
+
+    - name: Schrijf het rapport lokaal
+      ansible.builtin.copy:
+        content: "{{ update_report | to_nice_json }}\n"
+        dest: "/tmp/cs2-update-{{ inventory_hostname }}.json"
+        mode: "0644"
+      changed_when: false
+
+    - name: Upload het rapport naar S3
+      ansible.builtin.command:
+        cmd: >-
+          aws s3 cp /tmp/cs2-update-{{ inventory_hostname }}.json
+          s3://{{ artifacts_bucket }}/reports/{{ ansible_date_time.iso8601_basic_short }}-{{ inventory_hostname }}.json
+          --region {{ aws_region }}
+      changed_when: false
+
+    - name: Meld dat de update-ronde klaar is
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} is bijgewerkt; rapport staat in S3."
