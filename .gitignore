@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Terraform
 .terraform/
 *.tfstate
@@ -24,4 +25,12 @@ htmlcov/
 # Editors
 .vscode/
 .idea/
+=======
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+plan.txt
+crash.log
+>>>>>>> d02232185fea829d3866c50ae36508636202949b
 .DS_Store

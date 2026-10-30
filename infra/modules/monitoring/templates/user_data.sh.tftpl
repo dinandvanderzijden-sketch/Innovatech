@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euxo pipefail
+
+dnf install -y docker
+systemctl enable --now docker
+
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -fsSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+mkdir -p /opt/monitoring/prometheus /opt/monitoring/yace
+mkdir -p /opt/monitoring/grafana/provisioning/datasources /opt/monitoring/grafana/provisioning/dashboards /opt/monitoring/grafana/dashboards
+
+cat > /opt/monitoring/docker-compose.yml <<'EOF_COMPOSE'
+${compose}
+EOF_COMPOSE
+
+cat > /opt/monitoring/prometheus/prometheus.yml <<'EOF_PROM'
+${prometheus}
+EOF_PROM
+
+cat > /opt/monitoring/prometheus/alerts.yml <<'EOF_ALERTS'
+${alerts}
+EOF_ALERTS
+
+cat > /opt/monitoring/yace/config.yml <<'EOF_YACE'
+${yace}
+EOF_YACE
+
+cat > /opt/monitoring/grafana/provisioning/datasources/datasources.yml <<'EOF_DS'
+${datasources}
+EOF_DS
+
+cat > /opt/monitoring/grafana/provisioning/dashboards/dashboards.yml <<'EOF_DP'
+${dashprov}
+EOF_DP
+
+cat > /opt/monitoring/grafana/dashboards/innovatech.json <<'EOF_DASH'
+${dashboard}
+EOF_DASH
+
+cd /opt/monitoring
+docker compose up -d

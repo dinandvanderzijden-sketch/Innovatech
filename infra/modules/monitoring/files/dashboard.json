@@ -1,0 +1,51 @@
+{
+  "uid": "innovatech-key",
+  "title": "Innovatech - Key metrics",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "NGINX CPU (%) - scale-out bij 70",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "avg(aws_ecs_cpuutilization_average)", "legendFormat": "CPU" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 70 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "NGINX geheugen (%) - alert bij 80",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [ { "refId": "A", "expr": "avg(aws_ecs_memory_utilization_average)", "legendFormat": "Memory" } ],
+      "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 80 } ] } }, "overrides": [] }
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "ALB HTTP 5xx-rate (%) - alert bij 1",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [ { "refId": "A", "expr": "100 * sum(aws_applicationelb_httpcode_target_5xx_count_sum) / sum(aws_applicationelb_request_count_sum)", "legendFormat": "5xx %" } ],
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] }
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "ALB responstijd (s) - alert bij 0,5",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [ { "refId": "A", "expr": "avg(aws_applicationelb_target_response_time_average)", "legendFormat": "Response time" } ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "ALB requests per minuut",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [ { "refId": "A", "expr": "sum(aws_applicationelb_request_count_sum)", "legendFormat": "Requests" } ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Database CPU (%) - alert bij 85",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [ { "refId": "A", "expr": "avg(aws_rds_cpuutilization_average)", "legendFormat": "RDS CPU" } ],
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] }
+    }
+  ]
+}
