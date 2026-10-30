@@ -34,10 +34,20 @@ jobs:
         with:
           terraform_version: "1.9.8"
 
+      - name: Controleer AWS-rol
+        env:
+          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$ROLE_ARN" ]; then
+            echo "::error::De repository-secret AWS_ROLE_ARN ontbreekt. Zet hem op de waarde van 'terraform -chdir=infra output -raw github_role_arn'."
+            exit 1
+          fi
+          echo "OIDC-rol: $ROLE_ARN"
+
       - name: AWS-rechten via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Init met S3-backend
