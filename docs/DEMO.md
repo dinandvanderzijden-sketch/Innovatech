@@ -362,6 +362,7 @@ Let op:
 | SOAR verwerkt niets | Queue leeg of taak stuk | `./scripts/show_audit.sh --follow`; controleer `curl localhost:8080/health` |
 | Alarm gaat niet af | 2 × 5 minuten nodig | Gebruik `demo_attack.sh event` of verlaag de periodes |
 | GitHub Actions faalt op OIDC | `github_repo` verkeerd | Zet de juiste `owner/repo` en `terraform apply` opnieuw |
+| OIDC geeft `AccessDenied` en blijft "Assuming role" herhalen | GitHub stuurt een sub-claim met immutable ID's (`repo:owner@123/repo@456:...`) | De trust policy accepteert beide vormen; controleer met CloudTrail `AssumeRoleWithWebIdentity` welke `sub` binnenkomt |
 | Runner verschijnt niet | Registratie mislukt | Draai `register_runner.sh` opnieuw met een verse PAT |
 
 SSM-sessie naar een instance:

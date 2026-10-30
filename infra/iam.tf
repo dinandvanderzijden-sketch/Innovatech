@@ -357,10 +357,17 @@ data "aws_iam_policy_document" "github_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
+    # GitHub stuurt sinds 2025 immutable ID's mee in de sub-claim:
+    #   repo:owner@123456/repo@789012:ref:refs/heads/main
+    # Beide vormen worden geaccepteerd; de klassieke vorm blijft werken
+    # voor repo's zonder immutable subjects.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+      values = [
+        "repo:${var.github_repo}:*",
+        "repo:${split("/", var.github_repo)[0]}@*/${split("/", var.github_repo)[1]}@*:*",
+      ]
     }
   }
 }
