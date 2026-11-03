@@ -128,11 +128,6 @@ output "db_secret_arn" {
   value       = aws_secretsmanager_secret.db.arn
 }
 
-output "github_role_arn" {
-  description = "Role die GitHub Actions via OIDC mag aannemen."
-  value       = var.github_repo == "" ? "" : aws_iam_role.github[0].arn
-}
-
 output "grafana_admin_secret_arn" {
   description = "Secret met het Grafana-adminwachtwoord."
   value       = aws_secretsmanager_secret.grafana.arn

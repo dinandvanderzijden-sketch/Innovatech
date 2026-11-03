@@ -17,22 +17,31 @@ in AWS (`eu-central-1`), zonder on-premises componenten, VPN of BGP.
 | SOAR | FastAPI op ECS Fargate (2 taken), interne ALB, SQS + DLQ, EventBridge, DynamoDB-dedupe, Lambda-acties |
 | Audit | Aurora Serverless v2 (append-only tabel) + S3 met versioning |
 | Updates | Ansible via GitHub Actions op een self-hosted runner; SSH-sleutel in SSM |
-| CI/CD | GitHub Actions met OIDC naar AWS; `ci.yml`, `deploy-soar.yml`, `ansible-update.yml`; CodeBuild voor image-builds zonder Docker |
+| CI/CD | Push naar `main` = tests + `terraform apply` + image-build (CodeBuild); `destroy.yml` zet alles met één knop uit; OIDC, geen vaste sleutels |
 | Firewall | Gesimuleerde firewall-API: API Gateway → Lambda → DynamoDB |
 
 ## Snel starten
 
+Eenmalig lokaal (maakt de state-bucket, de GitHub-rol en de omgeving):
+
 ```bash
-# vanuit de root van deze repository
-cp infra/terraform.tfvars.example infra/terraform.tfvars
-# pas owner, github_repo en alert_email aan
+./scripts/bootstrap_state.sh
+```
 
-terraform -chdir=infra init
-terraform -chdir=infra apply
+Daarna gaat alles via GitHub:
 
-./scripts/build_codebuild.sh     # eerste keer: bouwt de image in AWS (geen Docker nodig)
-# of, met Docker op je laptop: ./scripts/build_push.sh
+1. **Deploy** — elke push naar `main` die `infra/`, `soar/`, `lambda/` of
+   `grafana/` raakt: tests → `terraform apply` → image bouwen en uitrollen.
+   Handmatig starten kan ook via **Actions → Deploy → Run workflow**.
+2. **Destroy** — **Actions → Destroy → Run workflow**, typ `DESTROY`.
+   De state-bucket en de GitHub-rol blijven staan, zodat een volgende Deploy
+   gewoon weer werkt.
 
+Lokaal werken kan ook:
+
+```bash
+terraform -chdir=infra plan
+./scripts/build_codebuild.sh     # image bouwen zonder Docker
 ./scripts/register_runner.sh <github-pat> <owner/repo>   # optioneel
 ```
 
@@ -49,12 +58,14 @@ De volledige demo staat in **[docs/DEMO.md](docs/DEMO.md)**.
 
 ```
 infra/                 Terraform: netwerk, IAM, observability, SOAR, database, runner
+infra/backend.tf       Gedeelde S3-state (bucket + lock)
+bootstrap/             Eenmalig: GitHub OIDC-rol + provider (overleeft destroy)
 infra/templates/       User-data scripts voor de drie EC2-rollen
 soar/                  FastAPI-applicatie, regelmotor, acties en audit
 lambda/                Gesimuleerde firewall-API
 grafana/               Datasources en dashboards (provisioning)
 ansible/               Inventory, playbooks en rollen voor updates
-.github/workflows/     CI, deploy, Terraform (optioneel) en Ansible
+.github/workflows/     CI, Deploy, Destroy en Ansible
 scripts/               Demo-, deploy-, audit- en hulpscripts
 docs/                  Demo, kosten en ontwerpverantwoording
 archive/cs1/           Vorige opdracht (hub-and-spoke), niet actief
@@ -89,8 +100,9 @@ in **[docs/ONTWERP-VS-CODE.md](docs/ONTWERP-VS-CODE.md)**. De belangrijkste:
   standaard `false`), omdat het `destroy` blokkeert.
 - **SOAR-quarantaine** schrijft een bewijsstuk naar S3 en tagt de instance;
   de netwerkisolatie zelf gebeurt niet automatisch.
-- **Terraform-state** staat standaard lokaal. Een S3-backendvoorbeeld staat in
-  `infra/backend.tf.example`.
+- **Terraform-state** staat in S3 (`infra/backend.tf`), zodat GitHub Actions
+  en je laptop dezelfde omgeving beheren. De bucket en de GitHub-rol staan in
+  `bootstrap/` en worden bewust niet door `destroy` verwijderd.
 
 ## Voorwaarden
 

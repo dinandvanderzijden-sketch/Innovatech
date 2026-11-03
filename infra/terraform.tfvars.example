@@ -5,8 +5,7 @@ environment = "dev"
 aws_region  = "eu-central-1"
 owner       = "Jouw Naam"
 
-# GitHub-repository voor OIDC. Leeg laten betekent: geen OIDC-rol.
-github_repo = "jouw-gebruiker/cs2-platform"
+# De GitHub OIDC-rol staat in bootstrap/terraform.tfvars, niet hier.
 
 # E-mailadres voor SNS-meldingen en het budgetalarm. Leeg laten mag.
 alert_email = ""

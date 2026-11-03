@@ -1,0 +1,26 @@
+# Kopieer dit bestand naar terraform.tfvars en pas het aan.
+
+project     = "cs2"
+environment = "dev"
+aws_region  = "eu-central-1"
+owner       = "Dinand van der Zijden"
+
+# E-mailadres voor SNS-meldingen en het budgetalarm. Leeg laten mag.
+alert_email = "dinandvanderzijden@gmail.com"
+
+# Demo-instellingen
+workload_instance_count = 2
+workload_instance_type  = "t3.micro"
+soar_desired_count      = 2
+soar_image_tag          = "latest"
+
+# Aurora Serverless v2: 0 ACU betekent scale-to-zero (kost niets als er niets gebeurt).
+aurora_min_acu = 0
+aurora_max_acu = 2
+
+# Optioneel: Object Lock op de auditbucket. Dit blokkeert destroy.
+enable_object_lock = false
+
+# Bewaartermijnen
+loki_retention_hours = 720
+audit_retention_days = 365

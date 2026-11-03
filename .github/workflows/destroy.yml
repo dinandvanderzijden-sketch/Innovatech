@@ -1,0 +1,57 @@
+name: Destroy
+
+# Eén knop om de omgeving uit te zetten en kosten te stoppen.
+# De GitHub-rol en de state-bucket blijven bestaan (die staan in bootstrap/),
+# zodat een volgende Deploy-run gewoon weer kan inloggen en uitrollen.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Typ DESTROY om de omgeving te verwijderen'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: cs2-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-central-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  destroy:
+    name: Terraform destroy
+    if: ${{ inputs.confirm == 'DESTROY' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.9"
+
+      - name: AWS-rechten via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform destroy
+        run: terraform destroy -input=false -auto-approve
+
+      - name: Samenvatting
+        run: |
+          echo "### Omgeving verwijderd" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "De state-bucket en de GitHub-rol blijven staan. Een nieuwe push naar \`main\` (of **Deploy** handmatig starten) bouwt alles opnieuw op." >> "$GITHUB_STEP_SUMMARY"

@@ -46,9 +46,28 @@ alert_email = "jij@example.com"               # mag leeg blijven
 
 ## 1. De omgeving uitrollen
 
+Twee routes. **Route A** is de normale: alles via GitHub. **Route B** is
+lokaal werken.
+
+### Route A — via GitHub
+
+Eenmalig lokaal, alleen als de state-bucket of de GitHub-rol nog niet bestaat
+(bijvoorbeeld na een lab-reset):
+
+```bash
+./scripts/bootstrap_state.sh
+```
+
+Daarna: push naar `main`. De workflow **Deploy** draait tests, `terraform
+apply`, en bouwt en pusht de SOAR-image via CodeBuild. Handmatig starten kan
+met **Actions → Deploy → Run workflow**.
+
+### Route B — lokaal
+
 ```bash
 terraform -chdir=infra init
 terraform -chdir=infra apply
+./scripts/build_codebuild.sh
 ```
 
 Terraform maakt onder andere:
@@ -70,9 +89,9 @@ terraform -chdir=infra output
 
 ### De eerste keer: de SOAR-image ontbreekt nog
 
-Bij de allereerste `apply` bestaat de ECR-repository nog leeg. De ECS-service
-probeert dan te starten en blijft op **0 running tasks** staan. Dat is
-verwacht. Bouw en push nu de image:
+Bij de allereerste `apply` is de ECR-repository leeg. De ECS-service blijft
+dan op **0 running tasks** staan en de ALB geeft **503**. Dat is verwacht.
+De Deploy-workflow bouwt de image automatisch; lokaal doe je dat met:
 
 ```bash
 ./scripts/build_codebuild.sh     # bouwt in AWS, geen Docker nodig
@@ -280,9 +299,10 @@ demo terug.
 ### 3.5 CI/CD (2 min)
 
 1. Push een kleine wijziging naar `main`, bijvoorbeeld een regel in
-   `soar/app/main.py` of `soar/rules.json`.
-2. Open GitHub → **Actions** → **Deploy SOAR**.
-3. Laat zien dat de workflow via OIDC inlogt (geen vaste AWS-sleutels).
+   `soar/rules.json`.
+2. Open GitHub → **Actions** → **Deploy**.
+3. Laat zien dat de workflow via OIDC inlogt (geen vaste AWS-sleutels),
+   `terraform apply` doet en daarna de image via CodeBuild bouwt en uitrolt.
 4. Laat de nieuwe taakdefinitie en de rolling deployment in ECS zien.
 
 ```bash
@@ -292,8 +312,10 @@ aws ecs describe-services \
   --output table
 ```
 
-**Vertel:** de workflow gebruikt `secrets.AWS_ROLE_ARN`, de rol die Terraform
-via OIDC heeft aangemaakt. Er staan geen AWS-sleutels in GitHub.
+**Vertel:** de workflow gebruikt de OIDC-rol uit `bootstrap/` (via
+`secrets.AWS_ROLE_ARN`, of de standaardwaarde in de workflow). Er staan geen
+AWS-sleutels in GitHub. De state staat in S3, zodat GitHub en je laptop
+dezelfde omgeving beheren.
 
 ### 3.6 Updates via Ansible (2 min, optioneel)
 
@@ -333,6 +355,12 @@ auditbucket is versleuteld, versiebeheerd en niet publiek.
 ---
 
 ## 4. Opruimen
+
+**Via GitHub (één knop):** Actions → **Destroy** → Run workflow → typ
+`DESTROY`. De state-bucket en de GitHub-rol blijven staan, zodat een volgende
+Deploy meteen weer kan inloggen en uitrollen.
+
+**Lokaal:**
 
 ```bash
 ./scripts/destroy.sh

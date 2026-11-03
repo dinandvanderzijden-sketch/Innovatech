@@ -5,8 +5,6 @@
 *.tfplan
 tfplan
 plan.txt
-terraform.tfvars
-backend.tf
 crash.log
 
 # Builds

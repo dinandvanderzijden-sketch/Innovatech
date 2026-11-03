@@ -111,12 +111,6 @@ variable "aurora_max_acu" {
 }
 
 # ---------------------------------------------------------------- integraties
-variable "github_repo" {
-  description = "GitHub-repository in de vorm owner/naam. Leeg laat de OIDC-rol weg."
-  type        = string
-  default     = ""
-}
-
 variable "alert_email" {
   description = "E-mailadres voor SNS-meldingen. Leeg laat de subscription weg."
   type        = string

@@ -154,13 +154,13 @@ bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
 | Terraform voor AWS-resources | `infra/` | Gerealiseerd |
 | Ansible voor configuratie | `ansible/` | Gerealiseerd |
 | Geen overlap | Terraform maakt geen pakketten; Ansible maakt geen AWS-resources | Gerealiseerd |
-| State in S3 met locking | Voorbeeld in `infra/backend.tf.example` | Afwijkend: standaard lokaal, zodat de demo zonder bootstrap werkt. |
+| State in S3 met locking | `infra/backend.tf`: S3 met native lockfile | Gerealiseerd. De bucket en de OIDC-rol staan in `bootstrap/` en overleven een destroy. |
 | Geheimen niet in Git | Secrets Manager, SSM SecureString, GitHub Secrets | Gerealiseerd |
 | PR: fmt, validate, plan, tflint, secret-scan | CI doet fmt, validate, tests en image-build | Afwijkend: `tflint`, secret-scan en `plan` staan niet in de standaard-CI. Terraform-plan staat in de optionele workflow. |
 | Zelfstandige runner in AWS | EC2 met label `cs2-runner`, alleen uitgaand verkeer | Afwijkend: egress is niet beperkt tot 443/22/5986; dat zou veel AWS- en GitHub-endpoints vereisen. |
-| OIDC, geen access keys | `aws_iam_openid_connect_provider` + rol | Gerealiseerd |
+| OIDC, geen access keys | `aws_iam_openid_connect_provider` + rol in `bootstrap/` | Gerealiseerd |
 | Rol met minimale rechten | `AdministratorAccess` op de OIDC-rol | Afwijkend: demo. In productie opsplitsen per workflow. |
-| Image met commit-SHA | `deploy-soar.yml` pusht `:${{ github.sha }}` en `:latest` | Gerealiseerd |
+| Image met commit-SHA | Deploy-workflow bouwt via CodeBuild en pusht `:latest`; `build_push.sh` pusht de git-SHA | Afwijkend: de standaardworkflow gebruikt `latest`, zodat een verse ECR na een apply direct werkt. |
 | Image bouwen zonder Docker | `aws_codebuild_project` + `scripts/build_codebuild.sh` | Aanvulling: handig als de werkplek geen Docker heeft. |
 | Rollback bij falen | ECS deployment circuit breaker | Gerealiseerd |
 | Pipeline is de enige weg | Consolewijzigingen zijn mogelijk | Afwijkend: niet technisch afgedwongen (SCP/permissions boundary ontbreekt). |
