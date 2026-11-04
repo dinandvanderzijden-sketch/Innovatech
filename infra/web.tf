@@ -36,6 +36,11 @@ resource "aws_lb_target_group_attachment" "web" {
   target_group_arn = aws_lb_target_group.web.arn
   target_id        = aws_instance.workload[count.index].private_ip
   port             = 80
+
+  # De servers staan in de Workload-VPC, de ALB in de Platform-VPC. Voor
+  # IP-targets buiten de VPC is een Availability Zone verplicht; "all"
+  # laat alle ALB-nodes naar de target toe.
+  availability_zone = "all"
 }
 
 resource "aws_lb_listener" "web" {
