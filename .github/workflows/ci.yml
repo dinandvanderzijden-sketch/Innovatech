@@ -53,7 +53,7 @@ jobs:
         run: pytest -q
 
       - name: Website-code compileren
-        working-directory: ..
+        working-directory: .
         run: python -m py_compile webapp/app.py
 
       - name: Image bouwen (zonder push)
