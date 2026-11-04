@@ -180,6 +180,14 @@ resource "aws_security_group" "aurora" {
     security_groups = [aws_security_group.soar.id]
   }
 
+  ingress {
+    description = "psql vanaf de runner (beheer)"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["${local.runner_private_ip}/32"]
+  }
+
   egress {
     description = "Standaard uitgaand verkeer"
     from_port   = 0

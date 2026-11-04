@@ -73,6 +73,11 @@ output "soar_internal_url" {
   value       = "http://${aws_lb.soar.dns_name}"
 }
 
+output "web_db_secret_arn" {
+  description = "Secret met de inloggegevens van de websitedatabase."
+  value       = aws_secretsmanager_secret.web_db.arn
+}
+
 output "web_db_endpoint" {
   description = "Writer-endpoint van de database achter de website."
   value       = aws_rds_cluster.web.endpoint
@@ -131,6 +136,11 @@ output "firewall_api_url" {
 output "firewall_api_key_secret_arn" {
   description = "Secret met de API-key van de firewall-API."
   value       = aws_secretsmanager_secret.firewall_api.arn
+}
+
+output "db_endpoint" {
+  description = "Writer-endpoint van de auditdatabase."
+  value       = aws_rds_cluster.soar.endpoint
 }
 
 output "db_secret_arn" {

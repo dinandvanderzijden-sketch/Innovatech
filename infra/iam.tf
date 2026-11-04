@@ -174,6 +174,12 @@ data "aws_iam_policy_document" "runner" {
   }
 
   statement {
+    sid       = "DatabaseSecrets"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.db.arn, aws_secretsmanager_secret.web_db.arn]
+  }
+
+  statement {
     sid = "Inventory"
     actions = [
       "ec2:DescribeInstances",

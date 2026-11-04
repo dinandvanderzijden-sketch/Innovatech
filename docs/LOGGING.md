@@ -95,20 +95,22 @@ aws rds describe-db-instances \
   --output table
 ```
 
-**Direct SQL (optioneel):** installeer op de runner één keer de client en
-gebruik het geheim:
+**Direct SQL — bekijk de tabellen en rijen:**
+
+De databases zijn privé, dus psql draait op de runner (binnen de VPC) en het
+script stuurt de query daarheen. Het wachtwoord blijft in Secrets Manager.
 
 ```bash
-RUN=$(terraform -chdir=infra output -raw runner_instance_id)
-aws ssm send-command --instance-ids "$RUN" --document-name AWS-RunShellScript \
-  --parameters 'commands=["sudo dnf install -y postgresql15 >/dev/null"]'
-
-# daarna (host en wachtwoord uit Secrets Manager / Terraform):
-#   psql -h <endpoint> -U soar_admin -d soar -c "select occurred_at,severity,title from audit_events order by id desc limit 10;"
+./scripts/db_query.sh                  # website: \dt + laatste berichten
+./scripts/db_query.sh audit            # audit: \dt + laatste events
+./scripts/db_query.sh web "select count(*) from berichten;"
+./scripts/db_query.sh web "\d berichten"        # kolommen en types
+./scripts/db_query.sh audit "select severity, count(*) from audit_events group by severity;"
 ```
 
-De SOAR-API is de aanbevolen route: die werkt zonder client en zonder
-wachtwoord in je shell.
+De eerste keer installeert het script de PostgreSQL-client op de runner
+(±30 seconden). Let op: dit is een echte SQL-sessie, dus een `insert` of
+`delete` wordt ook uitgevoerd.
 
 ---
 

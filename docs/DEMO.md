@@ -248,6 +248,13 @@ Open <http://localhost:8081> (uit stap 2). Je ziet een gastenboek met:
 curl "http://localhost:8081/api/berichten" | jq .
 ```
 
+**Laat de tabel zelf zien (SQL):**
+
+```bash
+./scripts/db_query.sh                    # \dt + laatste berichten
+./scripts/db_query.sh web "\d berichten"  # kolommen en types
+```
+
 **Laat de database zelf zien:**
 
 ```bash

@@ -40,6 +40,14 @@ resource "aws_security_group" "web_db" {
     cidr_blocks = [var.workload_vpc_cidr]
   }
 
+  ingress {
+    description = "psql vanaf de runner (beheer)"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["${local.runner_private_ip}/32"]
+  }
+
   egress {
     description = "Standaard uitgaand verkeer"
     from_port   = 0
