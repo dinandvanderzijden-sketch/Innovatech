@@ -55,6 +55,7 @@ Daarna:
 ```
 
 De volledige demo staat in **[docs/DEMO.md](docs/DEMO.md)**.
+Waar alle logs en de database staan: **[docs/LOGGING.md](docs/LOGGING.md)**.
 
 ## Repository-indeling
 
@@ -70,7 +71,7 @@ grafana/               Datasources en dashboards (provisioning)
 ansible/               Inventory, playbooks en rollen voor updates
 .github/workflows/     CI, Deploy, Destroy en Ansible
 scripts/               Demo-, deploy-, audit- en hulpscripts
-docs/                  Demo, kosten en ontwerpverantwoording
+docs/                  Demo, kosten, logging en ontwerpverantwoording
 archive/cs1/           Vorige opdracht (hub-and-spoke), niet actief
 ```
 

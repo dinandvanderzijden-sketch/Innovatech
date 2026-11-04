@@ -66,6 +66,13 @@ resource "aws_iam_role_policy" "codebuild" {
   policy = data.aws_iam_policy_document.codebuild.json
 }
 
+resource "aws_cloudwatch_log_group" "codebuild" {
+  name              = "/aws/codebuild/${local.name}-soar-build"
+  retention_in_days = 30
+
+  tags = { Name = "${local.name}-codebuild" }
+}
+
 resource "aws_codebuild_project" "soar" {
   name          = "${local.name}-soar-build"
   description   = "Bouwt de SOAR-image en pusht die naar ECR"
@@ -106,9 +113,11 @@ resource "aws_codebuild_project" "soar" {
 
   logs_config {
     cloudwatch_logs {
-      group_name = "/aws/codebuild/${local.name}-soar-build"
+      group_name = aws_cloudwatch_log_group.codebuild.name
     }
   }
+
+  depends_on = [aws_cloudwatch_log_group.codebuild]
 
   tags = { Name = "${local.name}-soar-build" }
 }
