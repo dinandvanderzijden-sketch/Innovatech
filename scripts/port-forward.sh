@@ -3,6 +3,7 @@
 #
 #   ./scripts/port-forward.sh grafana [local-port]
 #   ./scripts/port-forward.sh soar    [local-port]
+#   ./scripts/port-forward.sh web     [local-port]
 set -euo pipefail
 
 source "$(dirname "$0")/lib.sh"
@@ -34,8 +35,20 @@ case "$WHAT" in
       --parameters "{\"host\":[\"${ALB}\"],\"portNumber\":[\"80\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
     ;;
 
+  web)
+    TARGET="$(tf_output runner_instance_id)"
+    ALB="$(tf_output soar_alb_dns)"
+    LOCAL_PORT="${LOCAL_PORT:-8081}"
+    info "Website: http://localhost:${LOCAL_PORT} (blijft open tot je Ctrl+C typt)"
+    info "Ververs de pagina om te zien welke server antwoordt."
+    exec aws ssm start-session --region "$(aws_region)" \
+      --target "$TARGET" \
+      --document-name AWS-StartPortForwardingSessionToRemoteHost \
+      --parameters "{\"host\":[\"${ALB}\"],\"portNumber\":[\"8080\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+    ;;
+
   *)
-    echo "Kies 'grafana' of 'soar'." >&2
+    echo "Kies 'grafana', 'soar' of 'web'." >&2
     exit 1
     ;;
 esac

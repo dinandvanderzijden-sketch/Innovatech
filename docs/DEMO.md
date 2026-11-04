@@ -142,6 +142,20 @@ aws secretsmanager get-secret-value \
   --query SecretString --output text | jq -r .admin_password
 ```
 
+### De websites openen
+
+De twee bewaakte servers draaien nginx. Ze staan niet op internet; je kijkt
+ernaar via de interne load balancer en een SSM-tunnel:
+
+```bash
+./scripts/port-forward.sh web      # http://localhost:8081
+```
+
+Ververs de pagina een paar keer: de ene keer antwoordt server 1, de andere
+keer server 2. De pagina toont hostnaam, instance-ID en Availability Zone,
+zodat je de load balancer ziet werken. De health check van de target group
+gebruikt `/health`.
+
 ### SOAR-API openen
 
 In een tweede terminal:
@@ -214,7 +228,30 @@ aws logs tail /aws/vpc/cs2-dev/flowlogs --follow
 **Vertel:** CloudWatch bevat de AWS-native logs (VPC Flow Logs, SOAR, Lambda).
 Loki bevat de OS-logs. Grafana is het ene paneel voor beide.
 
-### 3.3 SOAR end-to-end (3 min)
+### 3.3 De websites (1 min)
+
+Open <http://localhost:8081> (uit stap 2) en ververs een paar keer.
+
+**Laat zien:**
+
+```bash
+aws elbv2 describe-target-health \
+  --target-group-arn "$(aws elbv2 describe-target-groups \
+    --names cs2-dev-web --query 'TargetGroups[0].TargetGroupArn' --output text)" \
+  --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]' --output table
+
+aws ec2 describe-instances --filters Name=tag:Project,Values=cs2 Name=tag:Role,Values=workload \
+  --query 'Reservations[].Instances[].[InstanceId,PrivateIpAddress,Placement.AvailabilityZone]' \
+  --output table
+```
+
+**Vertel:** de servers zijn webservers, maar hebben geen publiek IP. De
+interne ALB verdeelt het verkeer over beide servers in twee Availability
+Zones. De health check haalt een server automatisch uit de rotatie als nginx
+stopt. Dezelfde servers leveren ook de syslog en metrics voor de
+observability-stack.
+
+### 3.4 SOAR end-to-end (3 min)
 
 Stuur een brute-force-bevinding met een bron-IP:
 
@@ -270,7 +307,7 @@ Die regel (SOAR-003) schrijft een bewijsstuk naar S3 en tagt de instance met
 interne ALB. De SQS-queue heeft een dead-letter queue; mislukte berichten
 gaan na drie pogingen naar de DLQ. De deduplicatie gebeurt met DynamoDB.
 
-### 3.4 De echte alarmflow (3–8 min, optioneel)
+### 3.5 De echte alarmflow (3–8 min, optioneel)
 
 Nu zonder nep-event: laat een server echt druk worden.
 
@@ -296,7 +333,7 @@ aws cloudwatch describe-alarms --alarm-name-prefix cs2-dev-cpu \
 60 seconden en 1 periode) en voer `terraform apply` opnieuw uit. Zet dit na de
 demo terug.
 
-### 3.5 CI/CD (2 min)
+### 3.6 CI/CD (2 min)
 
 1. Push een kleine wijziging naar `main`, bijvoorbeeld een regel in
    `soar/rules.json`.
@@ -317,7 +354,7 @@ aws ecs describe-services \
 AWS-sleutels in GitHub. De state staat in S3, zodat GitHub en je laptop
 dezelfde omgeving beheren.
 
-### 3.6 Updates via Ansible (2 min, optioneel)
+### 3.7 Updates via Ansible (2 min, optioneel)
 
 Registreer eenmalig de runner:
 
@@ -335,7 +372,7 @@ in op de workloadservers en werkt de pakketten bij. Laat de run-log zien met
 benadert de servers via het interne netwerk. De SSH-sleutel is door Terraform
 gegenereerd en staat in SSM Parameter Store (SecureString), niet in Git.
 
-### 3.7 Beveiligingspostuur (1 min)
+### 3.8 Beveiligingspostuur (1 min)
 
 ```bash
 # Geen publieke IP's op de servers
@@ -406,12 +443,13 @@ aws ssm start-session --target "$(terraform -chdir=infra output -raw observabili
 Maak tijdens de demo screenshots van:
 
 1. De twee VPC's en de Transit Gateway in de AWS-console.
-2. De subnetten met hun CIDR's en de private route tables.
-3. Het Grafana-dashboard met CPU- en geheugenlijnen van beide servers.
-4. Een Loki-query met syslogregels van een workloadserver.
-5. De SQS-queue met de DLQ-configuratie.
-6. Het resultaat van `demo_attack.sh brute` en de DynamoDB-blokkade.
-7. Een auditobject in S3 en de rij in Aurora (`/audit/recent`).
-8. De GitHub Actions-run met OIDC en de nieuwe ECS-taakdefinitie.
-9. De Ansible-run met `ok=`/`changed=` per host.
-10. De kostenpagina of het budgetalarm.
+2. De website in de browser, met hostnaam en Availability Zone per server.
+3. De subnetten met hun CIDR's en de private route tables.
+4. Het Grafana-dashboard met CPU- en geheugenlijnen van beide servers.
+5. Een Loki-query met syslogregels van een workloadserver.
+6. De SQS-queue met de DLQ-configuratie.
+7. Het resultaat van `demo_attack.sh brute` en de DynamoDB-blokkade.
+8. Een auditobject in S3 en de rij in Aurora (`/audit/recent`).
+9. De GitHub Actions-run met OIDC en de nieuwe ECS-taakdefinitie.
+10. De Ansible-run met `ok=`/`changed=` per host.
+11. De kostenpagina of het budgetalarm.

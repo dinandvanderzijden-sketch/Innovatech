@@ -12,12 +12,28 @@ resource "aws_security_group" "alb" {
     cidr_blocks = [var.platform_vpc_cidr]
   }
 
+  ingress {
+    description = "Website van de bewaakte servers"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.platform_vpc_cidr]
+  }
+
   egress {
-    description = "Alleen naar de SOAR-taken"
+    description = "Naar de SOAR-taken"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = local.platform_app_cidrs
+  }
+
+  egress {
+    description = "Naar de webservers in de Workload-VPC"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.workload_vpc_cidr]
   }
 
   tags = { Name = "${local.name}-alb" }
@@ -99,6 +115,14 @@ resource "aws_security_group" "workload" {
   name        = "${local.name}-workload"
   description = "Bewaakte servers in de Workload-VPC"
   vpc_id      = aws_vpc.workload.id
+
+  ingress {
+    description = "Website vanaf de interne load balancer"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = local.platform_dmz_cidrs
+  }
 
   ingress {
     description = "Ansible over SSH vanaf de runner"

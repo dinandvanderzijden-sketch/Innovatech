@@ -65,6 +65,7 @@ locals {
   runner_private_ip        = "10.10.17.10"
 
   platform_app_cidrs = [for k, v in local.platform_subnets : v.cidr if v.tier == "app"]
+  platform_dmz_cidrs = [for k, v in local.platform_subnets : v.cidr if v.tier == "dmz"]
 }
 
 resource "random_id" "bucket" {

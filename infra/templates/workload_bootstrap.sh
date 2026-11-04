@@ -11,7 +11,7 @@ LOKI_URL="${loki_url}"
 PROM_URL="${prometheus_url}"
 ALLOY_VERSION="1.5.1"
 
-dnf install -y rsyslog unzip awscli-2
+dnf install -y rsyslog unzip awscli-2 nginx
 dnf install -y stress-ng || true
 systemctl enable --now rsyslog
 
@@ -33,6 +33,51 @@ cat >/etc/rsyslog.d/10-cs2-forward.conf <<EOF
 EOF
 
 systemctl restart rsyslog
+
+# ---------------------------------------------------------------- website
+# De server is een webserver: nginx toont een pagina met de eigen gegevens,
+# zodat je in de browser ziet welke server antwoord gaf.
+TOKEN="$(curl -fsS -X PUT http://169.254.169.254/latest/api/token \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')"
+INSTANCE_ID="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/instance-id)"
+AZ="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+
+cat >/usr/share/nginx/html/index.html <<EOF
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>CS2 webserver</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+           display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 2.5rem 3rem; border-radius: 12px;
+            border: 1px solid #334155; max-width: 40rem; }
+    h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+    p  { color: #94a3b8; margin: .25rem 0 1.5rem; }
+    dl { display: grid; grid-template-columns: 10rem 1fr; gap: .4rem 1rem; margin: 0; }
+    dt { color: #94a3b8; }
+    dd { margin: 0; font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>CS2 webserver</h1>
+    <p>Deze pagina wordt geserveerd door een bewaakte server in de Workload-VPC.</p>
+    <dl>
+      <dt>Hostnaam</dt><dd>$(hostname)</dd>
+      <dt>Instance-ID</dt><dd>$INSTANCE_ID</dd>
+      <dt>Availability Zone</dt><dd>$AZ</dd>
+    </dl>
+  </div>
+</body>
+</html>
+EOF
+
+echo "ok" >/usr/share/nginx/html/health
+systemctl enable --now nginx
 
 # ---------------------------------------------------------------- Alloy
 curl -fsSL -o /tmp/alloy.zip \

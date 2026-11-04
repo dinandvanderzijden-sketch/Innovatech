@@ -25,6 +25,7 @@ Legenda:
 | Deny-by-default | Security Groups met alleen de benodigde poorten | Afwijkend: NACL's staan op default. Security Groups zijn de leidende control. |
 | Network Firewall in de DMZ | Niet gebouwd; de firewall-API is een simulatie | Niet gebouwd (zie §2) |
 | Geen publieke SSH/RDP | SSM Session Manager; alleen poort 22 van runner naar workload | Gerealiseerd |
+| Webservers | nginx op beide workloadservers, interne ALB-listener op 8080, IP-targets via de Transit Gateway | Gerealiseerd. Bewust intern: bekijken via `./scripts/port-forward.sh web`. |
 | Alle geblokkeerde verbindingen gelogd | VPC Flow Logs (ALL) naar CloudWatch | Afwijkend: zonder Network Firewall zijn er geen firewall-logregels; flow logs laten de stromen zien. |
 
 ### Waarom geen Network Firewall?

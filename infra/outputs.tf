@@ -73,6 +73,11 @@ output "soar_internal_url" {
   value       = "http://${aws_lb.soar.dns_name}"
 }
 
+output "website_url" {
+  description = "Interne URL van de websites (via ./scripts/port-forward.sh web)."
+  value       = "http://${aws_lb.soar.dns_name}:8080"
+}
+
 output "soar_alb_dns" {
   description = "DNS-naam van de interne ALB."
   value       = aws_lb.soar.dns_name

@@ -13,6 +13,7 @@ in AWS (`eu-central-1`), zonder on-premises componenten, VPN of BGP.
 |---|---|
 | Netwerk | Platform-VPC `10.10.0.0/16` + Workload-VPC `10.20.0.0/16`, verbonden met een Transit Gateway |
 | Toegang | SSM Session Manager; geen publieke SSH/RDP en geen bastion |
+| Websites | nginx op de twee bewaakte servers, achter een interne ALB-listener (poort 8080); bekijken via `./scripts/port-forward.sh web` |
 | Observability | Grafana + Loki + Prometheus op een private EC2, Grafana Alloy op de servers, CloudWatch voor AWS-logs en flow logs |
 | SOAR | FastAPI op ECS Fargate (2 taken), interne ALB, SQS + DLQ, EventBridge, DynamoDB-dedupe, Lambda-acties |
 | Audit | Aurora Serverless v2 (append-only tabel) + S3 met versioning |
@@ -50,6 +51,7 @@ Daarna:
 ```bash
 ./scripts/port-forward.sh grafana   # http://localhost:3000
 ./scripts/port-forward.sh soar      # http://localhost:8080
+./scripts/port-forward.sh web       # http://localhost:8081
 ```
 
 De volledige demo staat in **[docs/DEMO.md](docs/DEMO.md)**.
@@ -59,6 +61,7 @@ De volledige demo staat in **[docs/DEMO.md](docs/DEMO.md)**.
 ```
 infra/                 Terraform: netwerk, IAM, observability, SOAR, database, runner
 infra/backend.tf       Gedeelde S3-state (bucket + lock)
+infra/web.tf           nginx-websites achter de interne ALB
 bootstrap/             Eenmalig: GitHub OIDC-rol + provider (overleeft destroy)
 infra/templates/       User-data scripts voor de drie EC2-rollen
 soar/                  FastAPI-applicatie, regelmotor, acties en audit
@@ -118,6 +121,7 @@ in **[docs/ONTWERP-VS-CODE.md](docs/ONTWERP-VS-CODE.md)**. De belangrijkste:
 | Eis | Bewijs in de demo |
 |---|---|
 | Netwerk gesegmenteerd | Twee VPC's, TGW, private subnetten, SG-overzicht |
+| Werkende websites | `port-forward.sh web` → nginx-pagina met hostnaam en AZ; target group toont beide servers healthy |
 | Geen publieke beheertoegang | SSM-sessies, geen publieke IP's |
 | Observability | Grafana-dashboards, Loki-query, flow logs |
 | SOAR reageert automatisch | `demo_attack.sh brute` → blokkade + audit + SNS |
