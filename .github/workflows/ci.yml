@@ -52,5 +52,9 @@ jobs:
       - name: Tests uitvoeren
         run: pytest -q
 
+      - name: Website-code compileren
+        working-directory: ..
+        run: python -m py_compile webapp/app.py
+
       - name: Image bouwen (zonder push)
         run: docker build -t cs2-soar:ci .

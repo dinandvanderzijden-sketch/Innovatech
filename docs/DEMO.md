@@ -228,28 +228,48 @@ aws logs tail /aws/vpc/cs2-dev/flowlogs --follow
 **Vertel:** CloudWatch bevat de AWS-native logs (VPC Flow Logs, SOAR, Lambda).
 Loki bevat de OS-logs. Grafana is het ene paneel voor beide.
 
-### 3.3 De websites (1 min)
+### 3.3 De websites met database (2 min)
 
-Open <http://localhost:8081> (uit stap 2) en ververs een paar keer.
+Open <http://localhost:8081> (uit stap 2). Je ziet een gastenboek met:
 
-**Laat zien:**
+- welke server antwoordt (hostnaam, instance-ID, Availability Zone);
+- hoeveel berichten er in de database staan;
+- de laatste tien berichten.
+
+**Laat de database werken:**
+
+1. Plaats een bericht via het formulier.
+2. Ververs de pagina een paar keer: de ene keer antwoordt server A, de
+   andere keer server B — het bericht blijft staan, want beide servers
+   gebruiken dezelfde database.
+3. Laat de JSON zien:
 
 ```bash
+curl "http://localhost:8081/api/berichten" | jq .
+```
+
+**Laat de database zelf zien:**
+
+```bash
+terraform -chdir=infra output web_db_endpoint
+
+aws rds describe-db-clusters --db-cluster-identifier cs2-dev-web-aurora \
+  --query 'DBClusters[0].{status:Status,db:DatabaseName,acu:ServerlessV2ScalingConfiguration}' \
+  --output json
+
 aws elbv2 describe-target-health \
   --target-group-arn "$(aws elbv2 describe-target-groups \
     --names cs2-dev-web --query 'TargetGroups[0].TargetGroupArn' --output text)" \
   --query 'TargetHealthDescriptions[].[Target.Id,TargetHealth.State]' --output table
-
-aws ec2 describe-instances --filters Name=tag:Project,Values=cs2 Name=tag:Role,Values=workload \
-  --query 'Reservations[].Instances[].[InstanceId,PrivateIpAddress,Placement.AvailabilityZone]' \
-  --output table
 ```
 
-**Vertel:** de servers zijn webservers, maar hebben geen publiek IP. De
-interne ALB verdeelt het verkeer over beide servers in twee Availability
-Zones. De health check haalt een server automatisch uit de rotatie als nginx
-stopt. Dezelfde servers leveren ook de syslog en metrics voor de
-observability-stack.
+**Vertel:** dit is de webapplicatie uit CS1, maar nu in de cloud-only variant:
+twee servers achter een interne ALB, met een eigen Aurora-database. De
+database van de SOAR (audit) is bewust een apart cluster: een compromis in de
+website mag nooit bij de auditgegevens kunnen. De servers hebben geen publiek
+IP; de pagina is alleen via de SSM-tunnel te bereiken. De health check
+(`/health`) praat niet met de database, zodat een slapende Aurora de server
+niet uit de rotatie haalt.
 
 ### 3.4 SOAR end-to-end (3 min)
 
@@ -443,7 +463,7 @@ aws ssm start-session --target "$(terraform -chdir=infra output -raw observabili
 Maak tijdens de demo screenshots van:
 
 1. De twee VPC's en de Transit Gateway in de AWS-console.
-2. De website in de browser, met hostnaam en Availability Zone per server.
+2. De website in de browser, met een bericht dat in de database staat en de server/AZ die antwoordde.
 3. De subnetten met hun CIDR's en de private route tables.
 4. Het Grafana-dashboard met CPU- en geheugenlijnen van beide servers.
 5. Een Loki-query met syslogregels van een workloadserver.

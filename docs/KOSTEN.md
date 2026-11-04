@@ -33,7 +33,8 @@ workloadservers, twee SOAR-taken.
 | EBS gp3 (100 GB) | $ 0,0952/GB-maand | 100 GB | $ 9,50 |
 | Application Load Balancer | $ 0,0225/uur | 1 | $ 16,40 |
 | ECS Fargate (0,5 vCPU + 1 GB) | $ 0,0247/uur per taak | 2 | $ 36,00 |
-| Aurora Serverless v2 (2 instanties) | $ 0,12/ACU-uur | 0–2 ACU elk | $ 20 – 60,00 |
+| Aurora Serverless v2 (audit, 2 instanties) | $ 0,12/ACU-uur | 0–2 ACU elk | $ 20 – 60,00 |
+| Aurora Serverless v2 (website, 1 instantie) | $ 0,12/ACU-uur | 0–2 ACU | $ 0 – 17,50 |
 | Aurora-opslag | $ 0,10/GB-maand | ~1 GB | $ 0,10 |
 | Prometheus (container op de observability-host) | inbegrepen | — | $ 0,00 |
 | S3 (drie buckets) | $ 0,0245/GB-maand | < 5 GB | $ 0,15 |
@@ -42,7 +43,7 @@ workloadservers, twee SOAR-taken.
 | Route 53 private zone | $ 0,50/zone | 1 | $ 0,50 |
 | SQS, SNS, Lambda, DynamoDB, API Gateway | verbruik | klein | < $ 1,00 |
 | CodeBuild (image-build) | $ 0,005/minuut | ± 5 min per deploy | < $ 0,10 |
-| **Totaal** | | | **± $ 285** |
+| **Totaal** | | | **± $ 300** |
 
 Aurora Serverless v2 staat op `min_capacity = 0`. Zonder verbindingen schaalt
 de database naar nul en betaal je alleen opslag. Tijdens de demo (met de SOAR
@@ -58,7 +59,7 @@ praktijk blijft het ver onder dat maximum.
 | EC2 + EBS | $ 0,65 |
 | ALB | $ 0,18 |
 | Fargate (2 taken) | $ 0,40 |
-| Aurora (2 × 2 ACU) | $ 3,84 |
+| Aurora (audit 2 × 2 ACU + website 1 × 1 ACU) | $ 3,84 |
 | Overig | < $ 1 |
 | **Totaal** | **± $ 7 – 9** |
 

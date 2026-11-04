@@ -50,6 +50,26 @@ resource "aws_iam_role_policy_attachment" "workload_ssm" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+data "aws_iam_policy_document" "workload_app" {
+  statement {
+    sid       = "WebappCode"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.artifacts.arn}/webapp/*"]
+  }
+
+  statement {
+    sid       = "WebDatabaseSecret"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.web_db.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "workload_app" {
+  name   = "${local.name}-workload-app"
+  role   = aws_iam_role.workload.id
+  policy = data.aws_iam_policy_document.workload_app.json
+}
+
 resource "aws_iam_instance_profile" "workload" {
   name = "${local.name}-workload"
   role = aws_iam_role.workload.name

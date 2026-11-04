@@ -13,7 +13,7 @@ in AWS (`eu-central-1`), zonder on-premises componenten, VPN of BGP.
 |---|---|
 | Netwerk | Platform-VPC `10.10.0.0/16` + Workload-VPC `10.20.0.0/16`, verbonden met een Transit Gateway |
 | Toegang | SSM Session Manager; geen publieke SSH/RDP en geen bastion |
-| Websites | nginx op de twee bewaakte servers, achter een interne ALB-listener (poort 8080); bekijken via `./scripts/port-forward.sh web` |
+| Websites | nginx + Flask op de twee servers, met een eigen Aurora-database (gastenboek); interne ALB op poort 8080, bekijken via `./scripts/port-forward.sh web` |
 | Observability | Grafana + Loki + Prometheus op een private EC2, Grafana Alloy op de servers, CloudWatch voor AWS-logs en flow logs |
 | SOAR | FastAPI op ECS Fargate (2 taken), interne ALB, SQS + DLQ, EventBridge, DynamoDB-dedupe, Lambda-acties |
 | Audit | Aurora Serverless v2 (append-only tabel) + S3 met versioning |
@@ -122,7 +122,8 @@ in **[docs/ONTWERP-VS-CODE.md](docs/ONTWERP-VS-CODE.md)**. De belangrijkste:
 | Eis | Bewijs in de demo |
 |---|---|
 | Netwerk gesegmenteerd | Twee VPC's, TGW, private subnetten, SG-overzicht |
-| Werkende websites | `port-forward.sh web` → nginx-pagina met hostnaam en AZ; target group toont beide servers healthy |
+| Werkende websites | `port-forward.sh web` → gastenboek; berichten blijven staan en zijn door beide servers geschreven |
+| Website met database | Eigen Aurora-cluster `web`, tabel `berichten`; bewijs via `/api/berichten` en `terraform output web_db_endpoint` |
 | Geen publieke beheertoegang | SSM-sessies, geen publieke IP's |
 | Observability | Grafana-dashboards, Loki-query, flow logs |
 | SOAR reageert automatisch | `demo_attack.sh brute` → blokkade + audit + SNS |

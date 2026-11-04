@@ -95,6 +95,12 @@ resource "aws_instance" "workload" {
     aws_ssm_parameter.log_target,
     aws_ssm_parameter.prometheus_url,
     aws_ssm_parameter.region,
+    aws_ssm_parameter.web_db_host,
+    aws_ssm_parameter.web_db_name,
+    aws_ssm_parameter.web_db_secret,
+    aws_secretsmanager_secret_version.web_db,
+    aws_s3_object.webapp,
+    aws_iam_role_policy.workload_app,
     aws_key_pair.ansible,
   ]
 }

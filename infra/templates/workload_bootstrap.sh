@@ -35,8 +35,8 @@ EOF
 systemctl restart rsyslog
 
 # ---------------------------------------------------------------- website
-# De server is een webserver: nginx toont een pagina met de eigen gegevens,
-# zodat je in de browser ziet welke server antwoord gaf.
+# De server is een webserver met een database-backed gastenboek:
+#   browser -> nginx (80) -> gunicorn/Flask (127.0.0.1:8000) -> Aurora
 TOKEN="$(curl -fsS -X PUT http://169.254.169.254/latest/api/token \
   -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')"
 INSTANCE_ID="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" \
@@ -44,42 +44,106 @@ INSTANCE_ID="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" \
 AZ="$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" \
   http://169.254.169.254/latest/meta-data/placement/availability-zone)"
 
-cat >/usr/share/nginx/html/index.html <<EOF
-<!doctype html>
-<html lang="nl">
-<head>
-  <meta charset="utf-8">
-  <title>CS2 webserver</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
-           display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .card { background: #1e293b; padding: 2.5rem 3rem; border-radius: 12px;
-            border: 1px solid #334155; max-width: 40rem; }
-    h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
-    p  { color: #94a3b8; margin: .25rem 0 1.5rem; }
-    dl { display: grid; grid-template-columns: 10rem 1fr; gap: .4rem 1rem; margin: 0; }
-    dt { color: #94a3b8; }
-    dd { margin: 0; font-family: ui-monospace, monospace; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>CS2 webserver</h1>
-    <p>Deze pagina wordt geserveerd door een bewaakte server in de Workload-VPC.</p>
-    <dl>
-      <dt>Hostnaam</dt><dd>$(hostname)</dd>
-      <dt>Instance-ID</dt><dd>$INSTANCE_ID</dd>
-      <dt>Availability Zone</dt><dd>$AZ</dd>
-    </dl>
-  </div>
-</body>
-</html>
+dnf install -y python3-pip
+
+install -d -m 0755 /opt/cs2-web /etc/cs2-web
+
+# Eigen venv: het pip van Amazon Linux wordt door rpm beheerd en mag je niet
+# upgraden.
+python3 -m venv /opt/cs2-web/venv
+/opt/cs2-web/venv/bin/pip install --quiet --upgrade pip
+/opt/cs2-web/venv/bin/pip install --quiet \
+  "flask==3.0.3" "gunicorn==22.0.0" "psycopg2-binary==2.9.9"
+
+WEB_DB_HOST="$(get_param config/web_db_host)"
+WEB_DB_NAME="$(get_param config/web_db_name)"
+WEB_DB_SECRET_ARN="$(get_param config/web_db_secret_arn)"
+ARTIFACTS_BUCKET="$(get_param config/artifacts_bucket)"
+
+SECRET_JSON="$(aws secretsmanager get-secret-value --region "$REGION" \
+  --secret-id "$WEB_DB_SECRET_ARN" --query SecretString --output text)"
+WEB_DB_USER="$(echo "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])')"
+WEB_DB_PASSWORD="$(echo "$SECRET_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')"
+
+cat >/etc/cs2-web/env <<EOF
+DB_HOST=$WEB_DB_HOST
+DB_PORT=5432
+DB_NAME=$WEB_DB_NAME
+DB_USER=$WEB_DB_USER
+DB_PASSWORD=$WEB_DB_PASSWORD
+SERVER_NAME=$(hostname)
+SERVER_AZ=$AZ
+SERVER_ID=$INSTANCE_ID
+EOF
+chmod 0600 /etc/cs2-web/env
+
+aws s3 cp --region "$REGION" "s3://$ARTIFACTS_BUCKET/webapp/app.py" /opt/cs2-web/app.py
+chmod 0644 /opt/cs2-web/app.py
+
+cat >/etc/systemd/system/cs2-web.service <<'EOF'
+[Unit]
+Description=CS2 gastenboek (Flask)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=nginx
+Group=nginx
+WorkingDirectory=/opt/cs2-web
+EnvironmentFile=/etc/cs2-web/env
+ExecStart=/opt/cs2-web/venv/bin/python -m gunicorn --workers 2 --bind 127.0.0.1:8000 --timeout 60 app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
 EOF
 
-echo "ok" >/usr/share/nginx/html/health
+# nginx als reverse proxy. De health check praat niet met de database, zodat
+# de server gezond blijft terwijl Aurora uit slaap komt.
+cat >/etc/nginx/nginx.conf <<'EOF'
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log notice;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    access_log    /var/log/nginx/access.log;
+    sendfile      on;
+    keepalive_timeout 65;
+    client_max_body_size 1m;
+
+    server {
+        listen 80 default_server;
+        server_name _;
+
+        location = /health {
+            access_log off;
+            proxy_pass http://127.0.0.1:8000/health;
+        }
+
+        location / {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 60s;
+        }
+    }
+}
+EOF
+
+systemctl daemon-reload
+systemctl enable --now cs2-web
 systemctl enable --now nginx
 
-# ---------------------------------------------------------------- Alloy
+# ---------------------------------------------------------------- Alloy# ---------------------------------------------------------------- Alloy
 curl -fsSL -o /tmp/alloy.zip \
   "https://github.com/grafana/alloy/releases/download/v$ALLOY_VERSION/alloy-linux-amd64.zip"
 unzip -o /tmp/alloy.zip -d /usr/local/bin

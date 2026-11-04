@@ -73,6 +73,11 @@ output "soar_internal_url" {
   value       = "http://${aws_lb.soar.dns_name}"
 }
 
+output "web_db_endpoint" {
+  description = "Writer-endpoint van de database achter de website."
+  value       = aws_rds_cluster.web.endpoint
+}
+
 output "website_url" {
   description = "Interne URL van de websites (via ./scripts/port-forward.sh web)."
   value       = "http://${aws_lb.soar.dns_name}:8080"

@@ -2,15 +2,33 @@
 
 Deze omgeving heeft twee soorten opslag:
 
-1. **De database (Aurora)** — voor de auditgegevens van de SOAR.
+1. **Twee databases (Aurora)** — de audit van de SOAR en het gastenboek van
+   de website. Ze zijn bewust gescheiden.
 2. **Logs** — verspreid over CloudWatch, S3 en Loki, elk voor een ander doel.
 
-De websites (nginx) gebruiken **geen** database: het zijn statische pagina's.
-De database hoort bij de SOAR, niet bij de website.
+De website is een Flask-app achter nginx en slaat berichten op in PostgreSQL.
+De SOAR heeft een eigen database met het auditspoor.
 
 ---
 
-## 1. De database: Aurora Serverless v2
+## 1. De databases: twee Aurora-clusters
+
+Er zijn twee aparte databases, met een bewuste scheiding:
+
+| | Audit (SOAR) | Website |
+|---|---|---|
+| Cluster | `cs2-dev-aurora` | `cs2-dev-web-aurora` |
+| Database | `soar` | `web` |
+| Tabel | `audit_events` | `berichten` |
+| Instanties | 2 (twee AZ's) | 1 (kostenkeuze) |
+| Capaciteit | 0–2 ACU | 0–2 ACU |
+| Doel | onweerlegbaar auditspoor | gastenboek van de website |
+
+De website schrijft via Flask naar `berichten`; de SOAR schrijft naar
+`audit_events`. Een storing of restore raakt maar één van de twee, en de
+website heeft geen toegang tot de auditgegevens.
+
+### Auditdatabase (SOAR)
 
 | Eigenschap | Waarde |
 |---|---|
@@ -24,7 +42,7 @@ De database hoort bij de SOAR, niet bij de website.
 | Back-up | Point-in-time, 1 dag |
 | Netwerk | Private data-subnetten, geen publieke toegang |
 
-### Wat staat erin?
+### Wat staat erin (audit)?
 
 Eén tabel: `audit_events`. De SOAR schrijft daar elke verwerkte gebeurtenis
 in, met de regel die vuurde en de acties die zijn uitgevoerd.
@@ -45,7 +63,18 @@ De tabel wordt bij de eerste verbinding automatisch aangemaakt
 (`CREATE TABLE IF NOT EXISTS` in `soar/app/audit.py`). Er is geen update- of
 delete-pad: auditregels worden alleen toegevoegd.
 
-### Hoe bekijk je de inhoud?
+### Websitedatabase
+
+De pagina toont zelf het aantal berichten. Voor de ruwe data:
+
+```bash
+curl "http://localhost:8081/api/berichten" | jq .
+```
+
+De app maakt de tabel bij de eerste verbinding aan. De mastergegevens staan
+in Secrets Manager (`cs2-dev/web-db`).
+
+### Hoe bekijk je de inhoud van de auditdatabase?
 
 **Makkelijkst — via de SOAR-API:**
 
