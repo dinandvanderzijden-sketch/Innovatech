@@ -69,8 +69,8 @@ Het account waarin de demo draait, heeft een service control policy die
 `aps:CreateWorkspace` blokkeert. Daarom draait Prometheus als container op
 de observability-host, met dezelfde remote-write-API. Grafana, Alloy en de
 dashboards zijn ongewijzigd; alleen het endpoint is anders. In een account
-zonder die beperking vervang je de container door een AMP-workspace en zet je
-`prometheus_url` op de AMP-endpoint.
+zonder die beperking vervang je de container door een AMP-workspace en pas je
+de datasource-URL in `grafana/provisioning/datasources` aan.
 
 ### Transportversleuteling
 

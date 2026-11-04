@@ -132,14 +132,6 @@ resource "aws_security_group" "workload" {
     cidr_blocks = ["${local.runner_private_ip}/32"]
   }
 
-  ingress {
-    description = "Ansible over WinRM HTTPS vanaf de runner"
-    from_port   = 5986
-    to_port     = 5986
-    protocol    = "tcp"
-    cidr_blocks = ["${local.runner_private_ip}/32"]
-  }
-
   egress {
     description = "Uitgaand voor syslog, metrics, updates en SSM"
     from_port   = 0

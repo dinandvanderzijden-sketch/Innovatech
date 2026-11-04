@@ -50,7 +50,6 @@ resource "aws_instance" "runner" {
 
   depends_on = [
     aws_ssm_parameter.ansible_private_key,
-    aws_ssm_parameter.region,
     aws_ssm_parameter.artifacts_bucket,
   ]
 }
@@ -93,8 +92,6 @@ resource "aws_instance" "workload" {
 
   depends_on = [
     aws_ssm_parameter.log_target,
-    aws_ssm_parameter.prometheus_url,
-    aws_ssm_parameter.region,
     aws_ssm_parameter.web_db_host,
     aws_ssm_parameter.web_db_name,
     aws_ssm_parameter.web_db_secret,

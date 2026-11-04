@@ -108,8 +108,6 @@ class AuditStore:
             conn = self._ensure_db()
             if conn is not None:
                 try:
-                    import psycopg2.extras
-
                     with conn.cursor() as cur:
                         cur.execute(
                             """

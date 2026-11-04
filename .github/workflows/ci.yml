@@ -1,8 +1,8 @@
 name: CI
 
+# De Deploy-workflow draait dezelfde controles op main. CI is er voor PR's,
+# zodat tests niet twee keer per push draaien.
 on:
-  push:
-    branches: [main]
   pull_request:
 
 permissions:

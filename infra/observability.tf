@@ -204,11 +204,9 @@ resource "aws_instance" "observability" {
   }
 
   depends_on = [
-    aws_ssm_parameter.prometheus_url,
     aws_ssm_parameter.loki_bucket,
     aws_ssm_parameter.grafana_secret,
     aws_ssm_parameter.artifacts_bucket,
-    aws_ssm_parameter.region,
     aws_s3_object.grafana_datasources,
     aws_s3_object.grafana_dashboards_provider,
     aws_s3_object.grafana_dashboard_operations,
@@ -282,18 +280,6 @@ resource "aws_route53_record" "runner" {
 }
 
 # ---------------------------------------------------------------- parameters
-resource "aws_ssm_parameter" "region" {
-  name  = "${local.param_prefix}/config/region"
-  type  = "String"
-  value = var.aws_region
-}
-
-resource "aws_ssm_parameter" "prometheus_url" {
-  name  = "${local.param_prefix}/config/prometheus_url"
-  type  = "String"
-  value = "http://${local.observability_private_ip}:9090"
-}
-
 resource "aws_ssm_parameter" "loki_bucket" {
   name  = "${local.param_prefix}/config/loki_bucket"
   type  = "String"
@@ -310,12 +296,6 @@ resource "aws_ssm_parameter" "grafana_secret" {
   name  = "${local.param_prefix}/config/grafana_secret_arn"
   type  = "String"
   value = aws_secretsmanager_secret.grafana.arn
-}
-
-resource "aws_ssm_parameter" "soar_url" {
-  name  = "${local.param_prefix}/config/soar_url"
-  type  = "String"
-  value = "http://${aws_lb.soar.dns_name}"
 }
 
 resource "aws_ssm_parameter" "log_target" {

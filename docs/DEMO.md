@@ -25,22 +25,15 @@ Een AWS-account met voldoende rechten (de demo gaat uit van een
 beheerderssessie). De geschatte kosten staan in `docs/KOSTEN.md`; reken op
 ongeveer € 7 per dag zolang de omgeving aan staat.
 
-```bash
-# vanuit de root van de repository
-cp infra/terraform.tfvars.example infra/terraform.tfvars
-```
-
-Pas in `infra/terraform.tfvars` minimaal aan:
+`infra/terraform.tfvars` staat al in de repository. Pas eventueel aan:
 
 ```hcl
 owner       = "Jouw Naam"
-github_repo = "jouw-gebruiker/cs2-platform"   # mag leeg blijven
-alert_email = "jij@example.com"               # mag leeg blijven
+alert_email = "jij@example.com"
 ```
 
-> `github_repo` is nodig voor de OIDC-rol waarmee GitHub Actions in AWS mag
-> inloggen. Zonder deze waarde werkt de infrastructuur wel, maar de
-> deploy-workflow niet.
+De GitHub-rol staat in `bootstrap/terraform.tfvars` (`github_repo`). Die is
+nodig voor de OIDC-login van de workflows.
 
 ---
 
