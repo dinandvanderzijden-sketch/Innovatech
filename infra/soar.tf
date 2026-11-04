@@ -145,7 +145,7 @@ data "archive_file" "firewall_api" {
 
 resource "aws_cloudwatch_log_group" "firewall_lambda" {
   name              = "/aws/lambda/${local.name}-firewall-api"
-  retention_in_days = 14
+  retention_in_days = 30
 }
 
 resource "aws_lambda_function" "firewall_api" {

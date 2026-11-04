@@ -60,7 +60,7 @@ eindopdracht is het verdedigbaar om NACL's als bijkomende laag toe te voegen.
 | Vijf logbronnen | syslog, journald, VPC Flow Logs, SOAR-logs, CloudWatch/Lambda | Afwijkend: Windows Event Log en auditd ontbreken (zie §5). |
 | Zelfbewaking | Alarmen op 5XX, ongezonde taken, verwerkingsfouten, DLQ, ontbrekende data | Gerealiseerd |
 | 150 dagen metrics | Prometheus bewaart 30 dagen op de eigen schijf | Afwijkend: kortere retentie dan het ontwerp; verlengen kan met een grotere EBS-volume. |
-| 30 dagen logs + 90 dagen archief | Loki 30 dagen; S3 is de archiefopslag | Afwijkend: CloudWatch-logs bewaren 14–30 dagen; er is geen aparte 90-daagse export. |
+| 30 dagen logs + 90 dagen archief | Loki 30 dagen; audit staat een jaar in S3 | Afwijkend: er is geen aparte 90-daagse logarchivering; de auditbewaring is juist langer. |
 | Audit minimaal een jaar | S3-levensduur 365 dagen; Aurora blijft staan | Gerealiseerd (tenzij je `audit_retention_days` verlaagt) |
 
 ### Waarom geen Amazon Managed Prometheus?

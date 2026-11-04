@@ -124,7 +124,7 @@ resource "aws_s3_bucket_object_lock_configuration" "audit" {
 # ---------------------------------------------------------------- logging
 resource "aws_cloudwatch_log_group" "flow_logs" {
   name              = "/aws/vpc/${local.name}/flowlogs"
-  retention_in_days = 14
+  retention_in_days = 30
 }
 
 resource "aws_flow_log" "platform" {
@@ -232,6 +232,14 @@ resource "aws_route53_zone" "internal" {
 resource "aws_route53_record" "grafana" {
   zone_id = aws_route53_zone.internal.zone_id
   name    = "grafana.innovatech.internal"
+  type    = "A"
+  ttl     = 60
+  records = [local.observability_private_ip]
+}
+
+resource "aws_route53_record" "prometheus" {
+  zone_id = aws_route53_zone.internal.zone_id
+  name    = "prometheus.innovatech.internal"
   type    = "A"
   ttl     = 60
   records = [local.observability_private_ip]

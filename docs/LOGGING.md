@@ -121,8 +121,8 @@ Elke logsoort heeft een eigen plek. Dit is de complete kaart:
 | Wat | Waar | Bewaartermijn | Zo bekijk je het |
 |---|---|---|---|
 | SOAR-applicatie (verwerkte events, fouten) | CloudWatch `/aws/ecs/cs2-dev-soar` | 30 dagen | `./scripts/show_audit.sh --follow` |
-| Netwerkverkeer (VPC Flow Logs) | CloudWatch `/aws/vpc/cs2-dev/flowlogs` | 14 dagen | `aws logs tail /aws/vpc/cs2-dev/flowlogs --follow` |
-| Firewall-Lambda | CloudWatch `/aws/lambda/cs2-dev-firewall-api` | 14 dagen | Console → CloudWatch → Log groups |
+| Netwerkverkeer (VPC Flow Logs) | CloudWatch `/aws/vpc/cs2-dev/flowlogs` | 30 dagen | `aws logs tail /aws/vpc/cs2-dev/flowlogs --follow` |
+| Firewall-Lambda | CloudWatch `/aws/lambda/cs2-dev-firewall-api` | 30 dagen | Console → CloudWatch → Log groups |
 | Image-builds | CloudWatch `/aws/codebuild/cs2-dev-soar-build` | 30 dagen | Console, of de Deploy-run |
 | OS-logs van de servers (syslog) | Loki, en als bestand `/var/log/remote/<host>.log` op de observability-host | 30 dagen (Loki) | Grafana → Explore → `{job="syslog"}` |
 | systemd-journal van de servers | Loki | 30 dagen | Grafana → Explore → `{job="systemd-journal"}` |
@@ -192,7 +192,7 @@ curl "http://localhost:8080/audit/recent?limit=10" | jq .
 | Audit in S3 | `audit_retention_days` | 365 |
 | Loki | `loki_retention_hours` | 720 (30 dagen) |
 | CloudWatch SOAR | vast in `infra/soar.tf` | 30 dagen |
-| Flow logs / Lambda | vast in `infra/observability.tf` | 14 dagen |
+| Flow logs / Lambda | vast in `infra/observability.tf` | 30 dagen |
 
 Pas je een waarde aan, dan rolt de Deploy-workflow hem uit. Let op: CloudWatch
 bewaart oude logstreams tot de ingestelde termijn; S3-levensduur verwijdert
