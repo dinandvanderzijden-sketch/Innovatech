@@ -48,9 +48,7 @@ SQL_B64="$(printf '%s' "$SQL" | base64 -w0)"
 REMOTE="$(cat <<EOF
 set -e
 if ! command -v psql >/dev/null 2>&1; then
-  for pkg in postgresql15 postgresql16; do
-    sudo dnf install -y "$pkg" >/dev/null 2>&1 && break
-  done
+  sudo dnf install -y postgresql15 >/dev/null 2>&1 || sudo dnf install -y postgresql16 >/dev/null 2>&1 || true
 fi
 command -v psql >/dev/null 2>&1 || { echo "psql kon niet worden geinstalleerd" >&2; exit 1; }
 
