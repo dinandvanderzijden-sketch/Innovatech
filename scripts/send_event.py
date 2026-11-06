@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Stuurt een demo-gebeurtenis naar EventBridge.
 
+Gebruikt de AWS CLI, zodat er geen Python-pakketten nodig zijn. De CLI is al
+nodig voor de andere scripts.
+
 Twee modi:
   alarm    -- doet zich voor als een CloudWatch-alarm (de normale flow)
   finding  -- stuurt een eigen beveiligingsbevinding (brute force, scan, ...)
 
 Voorbeelden:
   ./scripts/send_event.py --mode alarm --alarm-name cs2-dev-cpu-0
-  ./scripts/send_event.py --mode finding --title "SSH brute force" \
+  ./scripts/send_event.py --mode finding --title "SSH brute force" \\
       --severity high --ip 203.0.113.7
+  ./scripts/send_event.py --mode finding --ip 203.0.113.7 --dry-run
 """
 
 from __future__ import annotations
@@ -16,10 +20,22 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import uuid
 
-import boto3
+
+def aws(args: list[str], region: str) -> str:
+    """Voert een AWS CLI-commando uit en geeft de stdout terug."""
+    result = subprocess.run(
+        ["aws", *args, "--region", region],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(result.stderr.strip() or "AWS CLI-commando mislukt.", file=sys.stderr)
+        raise SystemExit(result.returncode)
+    return result.stdout.strip()
 
 
 def build_alarm(args: argparse.Namespace) -> dict:
@@ -73,29 +89,40 @@ def main() -> int:
     parser.add_argument("--severity", default="high", choices=["low", "medium", "high", "critical"])
     parser.add_argument("--ip", default=None, help="Bron-IP voor de bevinding")
     parser.add_argument("--resource", default=None, help="Instance-ID of andere resource")
+    parser.add_argument("--dry-run", action="store_true", help="Alleen tonen, niet versturen")
     args = parser.parse_args()
 
     if not args.account:
-        args.account = boto3.client("sts", region_name=args.region).get_caller_identity()["Account"]
+        args.account = (
+            "123456789012"
+            if args.dry_run
+            else aws(["sts", "get-caller-identity", "--query", "Account", "--output", "text"], args.region)
+        )
 
     event = build_alarm(args) if args.mode == "alarm" else build_finding(args)
+    entries = [
+        {
+            "Source": event["source"],
+            "DetailType": event["detail-type"],
+            "Detail": json.dumps(event["detail"]),
+            "EventBusName": "default",
+        }
+    ]
 
-    client = boto3.client("events", region_name=args.region)
-    response = client.put_events(
-        Entries=[
-            {
-                "Source": event["source"],
-                "DetailType": event["detail-type"],
-                "Detail": json.dumps(event["detail"]),
-                "EventBusName": "default",
-            }
-        ]
-    )
+    if args.dry_run:
+        print(json.dumps(entries, indent=2, ensure_ascii=False))
+        return 0
 
-    failed = response.get("FailedEntryCount", 0)
-    print(json.dumps(response, indent=2, default=str))
+    response = aws(["events", "put-events", "--entries", json.dumps(entries)], args.region)
+    try:
+        parsed = json.loads(response)
+    except json.JSONDecodeError:
+        print(response)
+        return 0
 
-    if failed:
+    print(json.dumps(parsed, indent=2, ensure_ascii=False))
+
+    if parsed.get("FailedEntryCount", 0):
         print("EventBridge kon het event niet aannemen.", file=sys.stderr)
         return 1
 

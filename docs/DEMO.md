@@ -19,7 +19,6 @@ Nodig op je laptop:
 | Terraform ≥ 1.6 | `terraform version` |
 | Docker | `docker version` (optioneel; CodeBuild kan het overnemen) |
 | jq en Python 3 | `jq --version`, `python3 --version` |
-| boto3 | `python3 -c "import boto3"` (anders: `pip install --user boto3`) |
 
 Een AWS-account met voldoende rechten (de demo gaat uit van een
 beheerderssessie). De geschatte kosten staan in `docs/KOSTEN.md`; reken op

@@ -157,5 +157,5 @@ De volledige onderbouwing staat in
 
 - Terraform ≥ 1.6 (lokaal getest met 1.15)
 - AWS CLI v2 + Session Manager-plugin
-- `jq`, Python 3 en `boto3` (voor `scripts/send_event.py`)
+- `jq` en Python 3 (de scripts gebruiken de AWS CLI)
 - Docker is optioneel; CodeBuild bouwt de image ook
