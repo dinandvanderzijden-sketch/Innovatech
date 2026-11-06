@@ -25,3 +25,6 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Bewijs-screenshots (bevatten account-ID's en IP's; niet in Git)
+bewijs/

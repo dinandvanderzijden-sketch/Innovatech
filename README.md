@@ -106,7 +106,7 @@ Wachtwoorden en demo-commando's:
 | `grafana/` | Datasources en twee dashboards |
 | `ansible/` | Inventory, playbook en rollen voor updates |
 | `scripts/` | Demo-, deploy-, database- en hulpscripts |
-| `docs/` | Demo, logging, kosten en ontwerpverantwoording |
+| `docs/` | Demo, logging, kosten, bewijsregister (`BEWIJS.md`) en ontwerpverantwoording |
 | `archive/cs1/` | Vorige opdracht (hub-and-spoke), niet actief |
 
 ## Wat je kunt demonstreren
