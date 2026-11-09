@@ -32,6 +32,10 @@ def file_map() -> dict[tuple[str, str], str]:
             for rtype, entries in block.items():
                 for rname in entries:
                     mapping[(rtype.strip('"'), rname.strip('"'))] = path.stem
+        for block in data.get("data", []):
+            for dtype, entries in block.items():
+                for dname in entries:
+                    mapping[(dtype.strip('"'), dname.strip('"'))] = path.stem
     return mapping
 
 
