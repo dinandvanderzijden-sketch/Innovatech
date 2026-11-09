@@ -29,13 +29,13 @@ htmlcov/
 # Bewijs-screenshots (bevatten account-ID's en IP's; niet in Git)
 bewijs/
 
-# Rover / diagram-tussenbestanden
-plan.json
-plan.out
-rover.svg
-rover.zip
-rover
-
-# Rover-tussenbestanden
-plan-*.json
-plan-*.out
+# Rover / diagram-tussenbestanden (alleen in de root, niet docs/diagram/rover/)
+/plan.json
+/plan.out
+/rover
+/rover.svg
+/rover.zip
+/plan-*.json
+/plan-*.out
+/infra/plan-*.json
+/infra/plan-*.out
