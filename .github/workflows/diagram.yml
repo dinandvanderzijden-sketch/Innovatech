@@ -24,7 +24,8 @@ env:
 jobs:
   rover:
     name: Rover-diagram maken
-    runs-on: ubuntu-latest
+    # 22.04: op 24.04 blokkeert AppArmor de Chrome-sandbox die Rover voor -genImage gebruikt.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -55,19 +56,26 @@ jobs:
 
       - name: Rover draaien op de plan
         run: |
-          ./rover -planJSONPath=plan.json -genImage true
-          ls -la rover.svg
+          if ! ./rover -planJSONPath=plan.json -genImage true; then
+            echo "SVG maken mislukt; standalone bundel als terugval."
+            ./rover -planJSONPath=plan.json -standalone true
+          fi
+          ls -la rover.svg rover.zip 2>/dev/null || true
 
       - name: Diagram bewaren
         run: |
           mkdir -p docs/diagram
-          cp rover.svg docs/diagram/terraform-rover.svg
+          if [ -f rover.svg ]; then
+            cp rover.svg docs/diagram/terraform-rover.svg
+          else
+            cp rover.zip docs/diagram/terraform-rover.zip
+          fi
 
       - name: Diagram committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/diagram/terraform-rover.svg
+          git add docs/diagram
           if git diff --cached --quiet; then
             echo "Geen wijziging in het diagram."
           else
