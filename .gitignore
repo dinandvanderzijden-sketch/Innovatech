@@ -28,3 +28,10 @@ htmlcov/
 
 # Bewijs-screenshots (bevatten account-ID's en IP's; niet in Git)
 bewijs/
+
+# Rover / diagram-tussenbestanden
+plan.json
+plan.out
+rover.svg
+rover.zip
+rover

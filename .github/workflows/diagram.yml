@@ -1,0 +1,75 @@
+name: Terraform-diagram (Rover)
+
+# Maakt een Rover-visualisatie van de Terraform-configuratie en commit de SVG
+# naar docs/diagram/. Draait met OIDC, dus zonder vaste AWS-sleutels.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/diagram.yml"
+
+permissions:
+  id-token: write
+  contents: write
+
+concurrency:
+  group: diagram
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-central-1
+  TF_IN_AUTOMATION: "true"
+  ROVER_VERSION: "0.3.3"
+
+jobs:
+  rover:
+    name: Rover-diagram maken
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.9"
+
+      - name: AWS-rechten via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init en plan
+        run: |
+          terraform -chdir=infra init -input=false
+          terraform -chdir=infra plan -input=false -out=plan.out
+          terraform -chdir=infra show -json plan.out > plan.json
+
+      - name: Rover downloaden
+        run: |
+          curl -fsSL -o rover.zip \
+            "https://github.com/im2nguyen/rover/releases/download/v${ROVER_VERSION}/rover_${ROVER_VERSION}_linux_amd64.zip"
+          unzip -o rover.zip
+          chmod +x rover
+          ./rover --version || true
+
+      - name: Rover draaien op de plan
+        run: |
+          ./rover -planJSONPath=plan.json -genImage true
+          ls -la rover.svg
+
+      - name: Diagram bewaren
+        run: |
+          mkdir -p docs/diagram
+          cp rover.svg docs/diagram/terraform-rover.svg
+
+      - name: Diagram committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/diagram/terraform-rover.svg
+          if git diff --cached --quiet; then
+            echo "Geen wijziging in het diagram."
+          else
+            git commit -m "Diagram: Terraform-graaf bijgewerkt (Rover)"
+            git push
+          fi
