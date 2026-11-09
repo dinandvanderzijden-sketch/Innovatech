@@ -23,32 +23,33 @@ OUT = Path("rover-plans")
 # Per laag: type-prefixen, of "type:naam" voor een specifieke resource.
 LAYERS = {
     "netwerk": [
-        "aws_vpc", "aws_subnet", "aws_route_table", "aws_route",
-        "aws_internet_gateway", "aws_nat_gateway", "aws_eip",
-        "aws_ec2_transit_gateway", "aws_vpc_endpoint", "aws_route53_zone",
+        "aws_vpc", "aws_subnet", "=aws_ec2_transit_gateway",
+        "=aws_ec2_transit_gateway_vpc_attachment", "aws_nat_gateway",
+        "aws_internet_gateway", "aws_route53_zone",
     ],
     "beveiliging": [
         "aws_security_group", "aws_key_pair", "aws_lambda_function",
-        "aws_api_gateway_", "aws_dynamodb_table", "aws_cloudwatch_log_group:firewall_lambda",
+        "=aws_api_gateway_rest_api", "aws_dynamodb_table",
     ],
     "websites": [
         "aws_instance:workload", "aws_lb", "aws_key_pair",
-        "aws_s3_object:webapp",
     ],
     "databases": [
-        "aws_rds_", "aws_db_", "aws_secretsmanager_secret",
+        "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group",
+        "aws_secretsmanager_secret",
     ],
     "soar": [
-        "aws_ecs_", "aws_ecr_", "aws_sqs_", "aws_cloudwatch_event_",
-        "aws_lambda_function", "aws_api_gateway_", "aws_dynamodb_table",
-        "aws_sns_", "aws_cloudwatch_log_group:soar",
+        "aws_ecs_cluster", "aws_ecs_service", "aws_ecs_task_definition",
+        "aws_lb", "aws_sqs_queue", "aws_cloudwatch_event_rule",
+        "aws_lambda_function", "=aws_api_gateway_rest_api",
+        "aws_dynamodb_table", "aws_sns_topic",
     ],
     "observability": [
-        "aws_instance:observability", "aws_cloudwatch_",
-        "aws_route53_record", "aws_flow_log",
+        "aws_instance:observability", "aws_cloudwatch_metric_alarm",
+        "aws_cloudwatch_log_group", "aws_route53_record", "aws_flow_log",
     ],
     "opslag": [
-        "aws_s3_",
+        "aws_s3_bucket",
     ],
 }
 
@@ -57,7 +58,10 @@ def matches(resource: dict, spec: list[str]) -> bool:
     rtype = resource.get("type", "")
     rname = resource.get("name", "")
     for item in spec:
-        if ":" in item:
+        if item.startswith("="):
+            if rtype == item[1:]:
+                return True
+        elif ":" in item:
             want_type, want_name = item.split(":", 1)
             if rtype == want_type and rname == want_name:
                 return True
