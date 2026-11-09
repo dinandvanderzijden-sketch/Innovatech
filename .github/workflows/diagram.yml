@@ -49,6 +49,7 @@ jobs:
           curl -fsSL -o rover.zip \
             "https://github.com/im2nguyen/rover/releases/download/v${ROVER_VERSION}/rover_${ROVER_VERSION}_linux_amd64.zip"
           unzip -o rover.zip
+          mv "rover_v${ROVER_VERSION}" rover
           chmod +x rover
           ./rover --version || true
 
