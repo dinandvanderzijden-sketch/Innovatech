@@ -8,6 +8,9 @@ on:
   push:
     paths:
       - ".github/workflows/diagram.yml"
+      - "infra/**"
+      - "scripts/rover_core.py"
+      - "scripts/rover_file_map.py"
 
 permissions:
   id-token: write
