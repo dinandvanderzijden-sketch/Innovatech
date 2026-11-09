@@ -39,3 +39,6 @@ bewijs/
 /plan-*.out
 /infra/plan-*.json
 /infra/plan-*.out
+
+# Gefilterde Rover-plannen (kunnen gevoelige waarden bevatten)
+/rover-plans/
