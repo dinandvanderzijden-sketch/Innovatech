@@ -22,6 +22,9 @@ resources die hij nodig heeft.
 | `rover/opslag.svg` | Drie S3-buckets met versioning, levensduur en encryptie |
 | `terraform-rover.svg` | De volledige graaf, als technisch totaalbeeld |
 
+Elke laag heeft ook een **PNG-preview** (`rover/<laag>.png`), handig voor een
+verslag of een snelle blik. De SVG is scherper bij inzoomen.
+
 ## Opnieuw maken
 
 GitHub → **Actions** → **Terraform-diagram (Rover)** → **Run workflow**.
