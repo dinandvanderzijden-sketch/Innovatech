@@ -61,17 +61,26 @@ jobs:
             args=()
             for t in "$@"; do args+=("-target=$t"); done
             echo "== $name =="
+            log="docs/diagram/rover/$name.log"
             if ! terraform -chdir=infra plan -input=false -lock-timeout=60s \
-                 "${args[@]}" -out="plan-$name.out"; then
-              echo "plan voor $name mislukt; laag overgeslagen"
+                 "${args[@]}" -out="plan-$name.out" >"$log" 2>&1; then
+              echo "plan voor $name mislukt; zie $log"
               return 0
             fi
-            terraform -chdir=infra show -json "plan-$name.out" > "plan-$name.json"
-            if ! ./rover -planJSONPath="plan-$name.json" -genImage true; then
-              echo "Rover voor $name mislukt; laag overgeslagen"
+            if ! terraform -chdir=infra show -json "plan-$name.out" > "plan-$name.json" 2>>"$log"; then
+              echo "show voor $name mislukt; zie $log"
+              return 0
+            fi
+            if ! ./rover -planJSONPath="plan-$name.json" -genImage true >>"$log" 2>&1; then
+              echo "Rover voor $name mislukt; zie $log"
+              return 0
+            fi
+            if [ ! -f rover.svg ]; then
+              echo "Rover maakte geen SVG voor $name; zie $log"
               return 0
             fi
             mv rover.svg "docs/diagram/rover/$name.svg"
+            rm -f "$log"
           }
 
           build netwerk \
@@ -149,6 +158,7 @@ jobs:
           fi
 
       - name: Diagrammen committen
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
