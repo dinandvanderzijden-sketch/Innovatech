@@ -9,11 +9,18 @@ Dit diagram wordt gemaakt door de workflow **Terraform-diagram (Rover)**.
 
 ## Wat je ziet
 
-Rover tekent de resources uit de Terraform-code. Om het leesbaar te houden,
-bevat de plan alleen de kern: VPC's, Transit Gateway, load balancers,
-servers, ECS, databases, S3, SQS, EventBridge, Lambda, API Gateway,
-DynamoDB, SNS en de DNS-zone. IAM-rollen, route tables, bucket-configuraties
-en SSM-parameters zijn weggelaten; die staan wel in de code.
+Rover tekent de resources uit de Terraform-code, **gegroepeerd per
+bronbestand**: `network.tf`, `security.tf`, `database.tf`, `web.tf`,
+`workload.tf`, `soar.tf` en `observability.tf`. Elk kader is een bestand;
+de lijnen zijn de verwijzingen tussen de resources.
+
+Die groepering wordt voor het diagram gemaakt: de plan wordt in synthetische
+modules per bestand gezet. De echte Terraform is niet in modules opgesplitst.
+Zo zie je welk bestand wat doet, zonder de live-state te wijzigen.
+
+Om het leesbaar te houden bevat de plan alleen de kern. IAM-rollen, route
+tables, bucket-configuraties en SSM-parameters zijn weggelaten; die staan wel
+in de code.
 
 De plan wordt gemaakt tegen een **lege diagram-state**. Daardoor zijn alle
 resources in het diagram groen: dat is wat de code zou aanmaken. Het is dus

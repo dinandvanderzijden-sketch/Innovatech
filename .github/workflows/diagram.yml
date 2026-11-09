@@ -58,9 +58,17 @@ jobs:
       - name: Kern filteren
         run: python3 scripts/rover_core.py plan.json
 
+      - name: Groeperen per bronbestand
+        run: |
+          python3 -m pip install --quiet python-hcl2
+          python3 scripts/rover_file_map.py plan-core.json
+
       - name: Rover draaien
         run: |
-          ./rover -planJSONPath=plan-core.json -genImage true
+          if ! ./rover -planJSONPath=plan-files.json -genImage true; then
+            echo "Bestandsgroepering mislukt; terug naar de kern."
+            ./rover -planJSONPath=plan-core.json -genImage true
+          fi
           mkdir -p docs/diagram
           cp rover.svg docs/diagram/terraform-rover.svg
           ls -lh docs/diagram/terraform-rover.svg
