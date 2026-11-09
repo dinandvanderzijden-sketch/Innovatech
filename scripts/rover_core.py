@@ -32,7 +32,6 @@ CORE = [
     "aws_ecr_repository",
     "aws_rds_cluster",
     "aws_rds_cluster_instance",
-    "aws_db_subnet_group",
     "aws_s3_bucket",
     "aws_sqs_queue",
     "aws_cloudwatch_event_rule",
@@ -43,7 +42,9 @@ CORE = [
     "aws_route53_zone",
     "aws_route53_record",
     "aws_secretsmanager_secret",
-    "aws_db_subnet_group",
+    "aws_ami",
+    "aws_availability_zones",
+    "aws_caller_identity",
 ]
 
 
