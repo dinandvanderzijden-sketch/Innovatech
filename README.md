@@ -130,6 +130,7 @@ De volledige route staat in **[docs/DEMO.md](docs/DEMO.md)**.
 | [docs/LOGGING.md](docs/LOGGING.md) | Databases, logs, retenties en query's |
 | [docs/KOSTEN.md](docs/KOSTEN.md) | Kosten per dag/maand en bespaartips |
 | [docs/ONTWERP-VS-CODE.md](docs/ONTWERP-VS-CODE.md) | Ontwerp naast code, met afwijkingen |
+| [docs/STRUCTUUR.md](docs/STRUCTUUR.md) | Elke map en elk bestand met zijn rol |
 
 ## Kosten
 

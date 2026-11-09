@@ -42,3 +42,6 @@ bewijs/
 
 # Gefilterde Rover-plannen (kunnen gevoelige waarden bevatten)
 /rover-plans/
+
+# Ruff
+.ruff_cache/
