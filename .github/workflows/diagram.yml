@@ -1,7 +1,8 @@
 name: Terraform-diagram (Rover)
 
-# Maakt een Rover-visualisatie van de Terraform-configuratie en commit de SVG
-# naar docs/diagram/. Draait met OIDC, dus zonder vaste AWS-sleutels.
+# Maakt Rover-visualisaties van de Terraform-configuratie en commit ze naar
+# docs/diagram/. Per laag een gerichte plan, zodat elk diagram leesbaar is,
+# plus één volledige graaf. Draait met OIDC, zonder vaste AWS-sleutels.
 on:
   workflow_dispatch:
   push:
@@ -23,7 +24,7 @@ env:
 
 jobs:
   rover:
-    name: Rover-diagram maken
+    name: Rover-diagrammen maken
     # 22.04: op 24.04 blokkeert AppArmor de Chrome-sandbox die Rover voor -genImage gebruikt.
     runs-on: ubuntu-22.04
     steps:
@@ -39,20 +40,8 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Overzichtsdiagram genereren
-        run: |
-          python3 -m pip install --quiet python-hcl2
-          python3 scripts/terraform_overview.py
-          npx -y @mermaid-js/mermaid-cli -i docs/diagram/terraform-overview.mmd \
-            -o docs/diagram/terraform-overview.svg -b white || echo "SVG-render overgeslagen"
-          npx -y @mermaid-js/mermaid-cli -i docs/diagram/terraform-overview.mmd \
-            -o docs/diagram/terraform-overview.png -b white || echo "PNG-render overgeslagen"
-
-      - name: Terraform init en plan
-        run: |
-          terraform -chdir=infra init -input=false
-          terraform -chdir=infra plan -input=false -out=plan.out
-          terraform -chdir=infra show -json plan.out > plan.json
+      - name: Terraform init
+        run: terraform -chdir=infra init -input=false
 
       - name: Rover downloaden
         run: |
@@ -61,33 +50,112 @@ jobs:
           unzip -o rover.zip
           mv "rover_v${ROVER_VERSION}" rover
           chmod +x rover
-          ./rover --version || true
 
-      - name: Rover draaien op de plan
+      - name: Rover per laag
         run: |
-          if ! ./rover -planJSONPath=plan.json -genImage true; then
-            echo "SVG maken mislukt; standalone bundel als terugval."
-            ./rover -planJSONPath=plan.json -standalone true
-          fi
-          ls -la rover.svg rover.zip 2>/dev/null || true
+          set -u
+          mkdir -p docs/diagram/rover
 
-      - name: Diagram bewaren
+          build() {
+            name="$1"; shift
+            args=()
+            for t in "$@"; do args+=("-target=$t"); done
+            echo "== $name =="
+            if ! terraform -chdir=infra plan -input=false -lock-timeout=60s \
+                 "${args[@]}" -out="plan-$name.out"; then
+              echo "plan voor $name mislukt; laag overgeslagen"
+              return 0
+            fi
+            terraform -chdir=infra show -json "plan-$name.out" > "plan-$name.json"
+            if ! ./rover -planJSONPath="plan-$name.json" -genImage true; then
+              echo "Rover voor $name mislukt; laag overgeslagen"
+              return 0
+            fi
+            mv rover.svg "docs/diagram/rover/$name.svg"
+          }
+
+          build netwerk \
+            aws_vpc.platform aws_vpc.workload aws_ec2_transit_gateway.this \
+            aws_subnet.platform aws_subnet.workload_private \
+            aws_nat_gateway.platform aws_nat_gateway.workload \
+            aws_internet_gateway.platform aws_internet_gateway.workload \
+            aws_route53_zone.internal
+
+          build beveiliging \
+            aws_security_group.alb aws_security_group.aurora aws_security_group.lambda \
+            aws_security_group.observability aws_security_group.runner \
+            aws_security_group.soar aws_security_group.web_db aws_security_group.workload \
+            aws_key_pair.ansible aws_lambda_function.firewall_api \
+            aws_api_gateway_rest_api.firewall aws_api_gateway_resource.block \
+            aws_api_gateway_method.block aws_api_gateway_integration.block \
+            aws_api_gateway_deployment.firewall aws_api_gateway_stage.firewall \
+            aws_api_gateway_api_key.firewall aws_api_gateway_usage_plan.firewall \
+            aws_api_gateway_usage_plan_key.firewall aws_lambda_permission.firewall_api \
+            aws_cloudwatch_log_group.firewall_lambda aws_dynamodb_table.blocked_ips
+
+          build websites \
+            aws_instance.workload aws_lb.soar aws_lb_listener.web \
+            aws_lb_target_group.web aws_lb_target_group_attachment.web \
+            aws_security_group.alb aws_security_group.workload aws_key_pair.ansible \
+            aws_s3_object.webapp
+
+          build databases \
+            aws_rds_cluster.soar aws_rds_cluster.web \
+            aws_rds_cluster_instance.writer aws_rds_cluster_instance.reader \
+            aws_rds_cluster_instance.web aws_db_subnet_group.aurora \
+            aws_security_group.aurora aws_security_group.web_db
+
+          build soar \
+            aws_ecs_cluster.soar aws_ecs_service.soar aws_ecs_task_definition.soar \
+            aws_lb.soar aws_lb_listener.http aws_lb_target_group.soar \
+            aws_sqs_queue.events aws_sqs_queue.events_dlq \
+            aws_cloudwatch_event_rule.alarm aws_cloudwatch_event_rule.finding \
+            aws_lambda_function.firewall_api aws_api_gateway_rest_api.firewall \
+            aws_dynamodb_table.blocked_ips aws_dynamodb_table.dedupe aws_sns_topic.alerts
+
+          build observability \
+            aws_instance.observability aws_cloudwatch_log_group.soar \
+            aws_cloudwatch_log_group.flow_logs \
+            aws_cloudwatch_metric_alarm.workload_cpu \
+            aws_cloudwatch_metric_alarm.workload_no_data \
+            aws_s3_bucket.loki aws_s3_bucket.artifacts \
+            aws_route53_record.grafana aws_route53_record.loki aws_route53_record.prometheus
+
+          build opslag \
+            aws_s3_bucket.audit aws_s3_bucket.loki aws_s3_bucket.artifacts \
+            aws_s3_bucket_versioning.audit aws_s3_bucket_versioning.loki \
+            aws_s3_bucket_versioning.artifacts \
+            aws_s3_bucket_lifecycle_configuration.audit \
+            aws_s3_bucket_lifecycle_configuration.loki \
+            aws_s3_bucket_server_side_encryption_configuration.audit \
+            aws_s3_bucket_server_side_encryption_configuration.loki \
+            aws_s3_bucket_server_side_encryption_configuration.artifacts \
+            aws_s3_bucket_public_access_block.audit \
+            aws_s3_bucket_public_access_block.loki \
+            aws_s3_bucket_public_access_block.artifacts \
+            aws_s3_bucket_object_lock_configuration.audit
+
+          ls -la docs/diagram/rover/
+
+      - name: Volledige graaf
         run: |
-          mkdir -p docs/diagram
-          if [ -f rover.svg ]; then
+          terraform -chdir=infra plan -input=false -lock-timeout=60s -out=plan.out
+          terraform -chdir=infra show -json plan.out > plan.json
+          if ./rover -planJSONPath=plan.json -genImage true; then
+            mkdir -p docs/diagram
             cp rover.svg docs/diagram/terraform-rover.svg
           else
-            cp rover.zip docs/diagram/terraform-rover.zip
+            echo "Volledige Rover-graaf mislukt; alleen de laagdiagrammen zijn bijgewerkt."
           fi
 
-      - name: Diagram committen
+      - name: Diagrammen committen
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/diagram
           if git diff --cached --quiet; then
-            echo "Geen wijziging in het diagram."
+            echo "Geen wijziging in de diagrammen."
           else
-            git commit -m "Diagram: Terraform-graaf bijgewerkt (Rover)"
+            git commit -m "Diagrammen: Rover per laag bijgewerkt"
             git push
           fi

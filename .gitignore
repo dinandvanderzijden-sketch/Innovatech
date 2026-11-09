@@ -35,3 +35,7 @@ plan.out
 rover.svg
 rover.zip
 rover
+
+# Rover-tussenbestanden
+plan-*.json
+plan-*.out

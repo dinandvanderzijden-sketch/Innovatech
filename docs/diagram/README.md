@@ -1,33 +1,28 @@
-# Terraform-diagram (Rover)
+# Terraform-diagrammen (Rover)
 
-Deze map wordt gevuld door de workflow **Terraform-diagram (Rover)**.
+Deze map wordt gevuld door de workflow **Terraform-diagram (Rover)**. Alle
+diagrammen zijn met Rover gemaakt.
 
-| Bestand | Wat het is |
+## Per laag
+
+Rover tekent standaard alle resources en alle afhankelijkheden: bij deze
+omgeving zijn dat 180 knopen, en dat is onleesbaar. Daarom maakt de workflow
+per laag een gerichte `terraform plan -target` en laat Rover daarop los. Elk
+diagram is nog steeds een echte Rover-graaf, maar beperkt tot die laag plus de
+resources die hij nodig heeft.
+
+| Bestand | Laag |
 |---|---|
-| `terraform-overview.mmd` | Het **gelaagde overzichtsdiagram** (Mermaid): netwerk, beveiliging, websites, databases, opslag, observability, SOAR en DevOps, met de belangrijkste stromen. Gegenereerd uit `infra/*.tf` door `scripts/terraform_overview.py`. |
-| `terraform-overview.md` | Hetzelfde diagram als Markdown met een resourcetelling per laag. GitHub rendert dit. |
-| `terraform-rover.svg` | De volledige Rover-graaf van de plan: alle resources en hun afhankelijkheden. Vector. |
-| `terraform-rover.png` | Dezelfde Rover-graaf als PNG. |
-
-## Zo lees je hem
-
-Er zijn twee soorten diagrammen:
-
-- **Overzicht** (`terraform-overview`): de lagen en de belangrijkste stromen.
-  Dit is het diagram voor je verslag en voor een demo.
-- **Rover** (`terraform-rover`): elke resource en elke afhankelijkheid.
-  Compleet, maar druk; gebruik hem als technisch bewijs.
-
-Rover toont de **afhankelijkheden** uit de plan, niet de architectuur op hoog
-niveau. Elke doos is een resource of data source; de lijnen zijn
-`depends_on`- en referentierelaties.
-
-voor het verhaal in je verslag is de architectuurfiguur in het ontwerpdocument
-(onderdeel 0 en 1) leesbaarder. Gebruik de Rover-graaf als technisch bewijs:
-hij laat zien dat alle resources via Terraform aan elkaar hangen en welke
-resources van elkaar afhankelijk zijn.
+| `rover/netwerk.svg` | VPC's, subnetten, Transit Gateway, NAT en Route 53 |
+| `rover/beveiliging.svg` | Security Groups, firewall-API en bijbehorende Lambda/API Gateway |
+| `rover/websites.svg` | Webservers, ALB, target group en de app-code in S3 |
+| `rover/databases.svg` | Twee Aurora-clusters, instanties en subnet group |
+| `rover/soar.svg` | ECS, ALB, SQS, EventBridge, Lambda, API Gateway, DynamoDB en SNS |
+| `rover/observability.svg` | Observability-host, loggroepen, alarmen, buckets en DNS |
+| `rover/opslag.svg` | Drie S3-buckets met versioning, levensduur en encryptie |
+| `terraform-rover.svg` | De volledige graaf, als technisch totaalbeeld |
 
 ## Opnieuw maken
 
 GitHub → **Actions** → **Terraform-diagram (Rover)** → **Run workflow**.
-De workflow maakt een plan met OIDC, draait Rover en commit de nieuwe SVG.
+De workflow maakt per laag een plan, draait Rover en commit de SVG's.
