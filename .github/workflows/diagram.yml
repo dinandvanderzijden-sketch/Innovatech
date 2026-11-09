@@ -3,6 +3,7 @@ name: Terraform-diagram (Rover)
 # Maakt Rover-visualisaties van de Terraform-configuratie en commit ze naar
 # docs/diagram/. Per laag een gerichte plan, zodat elk diagram leesbaar is,
 # plus één volledige graaf. Draait met OIDC, zonder vaste AWS-sleutels.
+# De laagdiagrammen staan in docs/diagram/rover/ (niet genegeerd door .gitignore).
 on:
   workflow_dispatch:
   push:
