@@ -17,6 +17,11 @@ from pathlib import Path
 CORE = [
     "aws_vpc",
     "aws_ec2_transit_gateway",
+    "aws_ec2_transit_gateway_vpc_attachment",
+    "aws_nat_gateway",
+    "aws_internet_gateway",
+    "aws_security_group",
+    "aws_iam_role",
     "aws_lb",
     "aws_lb_target_group",
     "aws_lb_listener",
@@ -36,6 +41,9 @@ CORE = [
     "aws_dynamodb_table",
     "aws_sns_topic",
     "aws_route53_zone",
+    "aws_route53_record",
+    "aws_secretsmanager_secret",
+    "aws_db_subnet_group",
 ]
 
 
