@@ -81,6 +81,17 @@ jobs:
             echo "Volledige Rover-graaf mislukt."
           fi
 
+      - name: PNG-previews maken
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin
+          for f in docs/diagram/rover/*.svg; do
+            rsvg-convert -w 2000 "$f" -o "${f%.svg}.png"
+          done
+          if [ -f docs/diagram/terraform-rover.svg ]; then
+            rsvg-convert -w 2400 docs/diagram/terraform-rover.svg -o docs/diagram/terraform-rover.png
+          fi
+
       - name: Diagrammen committen
         if: always()
         run: |
