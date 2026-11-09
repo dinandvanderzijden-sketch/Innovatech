@@ -18,6 +18,8 @@ CORE = [
     "aws_vpc",
     "aws_ec2_transit_gateway",
     "aws_lb",
+    "aws_lb_target_group",
+    "aws_lb_listener",
     "aws_instance",
     "aws_ecs_cluster",
     "aws_ecs_service",

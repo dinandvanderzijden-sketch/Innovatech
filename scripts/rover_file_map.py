@@ -54,25 +54,21 @@ def prefix(module: dict, mapping: dict[tuple[str, str], str]) -> None:
         children.append({"address": address, "resources": resources})
 
 
-def move_config(root: dict, mapping: dict[tuple[str, str], str]) -> dict[str, str]:
-    groups: dict[str, list[dict]] = {}
-    keep: list[dict] = []
+def prefix_config(root: dict, mapping: dict[tuple[str, str], str]) -> dict[str, str]:
+    """Houdt de configuratie plat, maar geeft resources een module-adres.
+
+    Rover bouwt randen uit de configuratie. Door de configuratie plat te
+    houden (geen module_calls) en de adressen te prefixen, kan hij de
+    verwijzingen naar andere bestanden wel leggen.
+    """
+    replacements: dict[str, str] = {}
     for resource in root.get("resources", []):
         source = mapping.get((resource.get("type", ""), resource.get("name", "")))
         if not source:
-            keep.append(resource)
             continue
-        groups.setdefault(source, []).append(resource)
-    root["resources"] = keep
-
-    calls = root.setdefault("module_calls", {})
-    replacements: dict[str, str] = {}
-    for source, resources in groups.items():
-        name = slug(source)
-        module = {"resources": resources, "variables": {}, "outputs": {}}
-        calls[name] = {"source": f"./{source}.tf", "module": module}
-        for resource in resources:
-            replacements[resource["address"]] = f"module.{name}.{resource['address']}"
+        new_address = f"module.{slug(source)}.{resource['address']}"
+        replacements[resource["address"]] = new_address
+        resource["address"] = new_address
     return replacements
 
 
@@ -111,7 +107,7 @@ def main() -> int:
     p["resource_changes"] = changes
 
     config = p.get("configuration", {}).get("root_module", {})
-    replacements = move_config(config, mapping)
+    replacements = prefix_config(config, mapping)
     p["configuration"] = rewrite(p.get("configuration", {}), replacements)
 
     out = Path("plan-files.json")
