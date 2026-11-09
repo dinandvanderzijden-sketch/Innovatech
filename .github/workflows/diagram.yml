@@ -43,6 +43,10 @@ jobs:
         run: |
           python3 -m pip install --quiet python-hcl2
           python3 scripts/terraform_overview.py
+          npx -y @mermaid-js/mermaid-cli -i docs/diagram/terraform-overview.mmd \
+            -o docs/diagram/terraform-overview.svg -b white || echo "SVG-render overgeslagen"
+          npx -y @mermaid-js/mermaid-cli -i docs/diagram/terraform-overview.mmd \
+            -o docs/diagram/terraform-overview.png -b white || echo "PNG-render overgeslagen"
 
       - name: Terraform init en plan
         run: |
