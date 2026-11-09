@@ -58,7 +58,7 @@ Daarna gaat alles via GitHub:
 
 | Actie | Hoe |
 |---|---|
-| Uitrollen | Push naar `main` → **Deploy**: tests, `terraform apply`, image bouwen (CodeBuild), ECS uitrollen |
+| Uitrollen | Push naar `main` → **Deploy**: tests, `terraform apply`, image bouwen met Docker, ECS uitrollen |
 | Handmatig uitrollen | Actions → **Deploy** → Run workflow |
 | Uitzetten | Actions → **Destroy** → Run workflow → typ `DESTROY` |
 
@@ -74,7 +74,6 @@ kunt uitrollen.
 ```bash
 terraform -chdir=infra plan          # wijzigingen bekijken
 terraform -chdir=infra apply         # lokaal uitrollen
-./scripts/build_codebuild.sh         # image bouwen zonder Docker
 ./scripts/build_push.sh              # alternatief: lokaal met Docker
 ./scripts/port-forward.sh grafana    # http://localhost:3000
 ./scripts/port-forward.sh web        # http://localhost:8081
@@ -98,7 +97,6 @@ Wachtwoorden en demo-commando's:
 | `infra/` | Terraform: netwerk, beveiliging, IAM, databases, SOAR, observability, CI-hulp |
 | `infra/backend.tf` | Gedeelde S3-state met lockfile |
 | `infra/templates/` | User-data voor de drie EC2-rollen |
-| `infra/codebuild/` | Buildspec voor de SOAR-image |
 | `bootstrap/` | Eenmalig: GitHub OIDC-rol en provider (overleeft destroy) |
 | `webapp/` | Flask-gastenboek op de webservers |
 | `soar/` | FastAPI-app, regelmotor, acties, audit en tests |
@@ -118,9 +116,9 @@ Wachtwoorden en demo-commando's:
 | Observability | Grafana-dashboards, Loki-query's, VPC Flow Logs |
 | SOAR | `demo_attack.sh brute` → IP-blokkade, SNS-melding, audit in S3 en Aurora |
 | Audit | `/audit/recent`, S3-objecten, `db_query.sh audit` |
-| CI/CD | Push → Deploy met OIDC, CodeBuild en ECS-uitrol |
+| CI/CD | Push → Deploy met OIDC, Docker-build en ECS-uitrol |
 | Updates | Ansible-run; tweede run geeft `changed=0` |
-| Kosten | Budgetalarm en `docs/KOSTEN.md` |
+| Kosten | Kostenoverzicht en Cost Explorer |
 
 De volledige route staat in **[docs/DEMO.md](docs/DEMO.md)**.
 
@@ -158,4 +156,4 @@ De volledige onderbouwing staat in
 - Terraform ≥ 1.6 (lokaal getest met 1.15)
 - AWS CLI v2 + Session Manager-plugin
 - `jq` en Python 3 (de scripts gebruiken de AWS CLI)
-- Docker is optioneel; CodeBuild bouwt de image ook
+- Docker is niet nodig op je laptop; Deploy bouwt de image op de GitHub-runner

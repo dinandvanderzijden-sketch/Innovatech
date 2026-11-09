@@ -17,7 +17,7 @@ Nodig op je laptop:
 | AWS CLI v2 | `aws --version` |
 | Session Manager-plugin | `session-manager-plugin` |
 | Terraform ≥ 1.6 | `terraform version` |
-| Docker | `docker version` (optioneel; CodeBuild kan het overnemen) |
+| Docker | alleen nodig als je lokaal bouwt; Deploy bouwt in GitHub Actions |
 | jq en Python 3 | `jq --version`, `python3 --version` |
 
 Een AWS-account met voldoende rechten (de demo gaat uit van een
@@ -51,7 +51,7 @@ Eenmalig lokaal, alleen als de state-bucket of de GitHub-rol nog niet bestaat
 ```
 
 Daarna: push naar `main`. De workflow **Deploy** draait tests, `terraform
-apply`, en bouwt en pusht de SOAR-image via CodeBuild. Handmatig starten kan
+apply`, en bouwt en pusht de SOAR-image met Docker. Handmatig starten kan
 met **Actions → Deploy → Run workflow**.
 
 ### Route B — lokaal
@@ -59,7 +59,7 @@ met **Actions → Deploy → Run workflow**.
 ```bash
 terraform -chdir=infra init
 terraform -chdir=infra apply
-./scripts/build_codebuild.sh
+./scripts/build_push.sh
 ```
 
 Terraform maakt onder andere:
@@ -86,13 +86,11 @@ dan op **0 running tasks** staan en de ALB geeft **503**. Dat is verwacht.
 De Deploy-workflow bouwt de image automatisch; lokaal doe je dat met:
 
 ```bash
-./scripts/build_codebuild.sh     # bouwt in AWS, geen Docker nodig
-# of met Docker: ./scripts/build_push.sh
+./scripts/build_push.sh     # bouwt lokaal met Docker
 ```
 
-`build_codebuild.sh` zipt `soar/`, uploadt naar S3, start het
-CodeBuild-project en wacht op de uitslag. Daarna krijgt de ECS-service een
-nieuwe deployment (2–4 minuten).
+Of push naar `main`: de Deploy-workflow bouwt de image op de GitHub-runner en
+rolt hem uit. Daarna krijgt de ECS-service een nieuwe deployment (2–4 minuten).
 
 Controleer daarna:
 
@@ -358,7 +356,7 @@ demo terug.
    `soar/rules.json`.
 2. Open GitHub → **Actions** → **Deploy**.
 3. Laat zien dat de workflow via OIDC inlogt (geen vaste AWS-sleutels),
-   `terraform apply` doet en daarna de image via CodeBuild bouwt en uitrolt.
+   `terraform apply` doet en daarna de image met Docker bouwt en uitrolt.
 4. Laat de nieuwe taakdefinitie en de rolling deployment in ECS zien.
 
 ```bash
@@ -471,4 +469,4 @@ Maak tijdens de demo screenshots van:
 8. Een auditobject in S3 en de rij in Aurora (`/audit/recent`).
 9. De GitHub Actions-run met OIDC en de nieuwe ECS-taakdefinitie.
 10. De Ansible-run met `ok=`/`changed=` per host.
-11. De kostenpagina of het budgetalarm.
+11. De kostenpagina in de AWS-console (Cost Explorer).

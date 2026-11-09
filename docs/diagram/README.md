@@ -1,31 +1,25 @@
-# Terraform-diagrammen (Rover)
+# Terraform-diagram (Rover)
 
-Deze map wordt gevuld door de workflow **Terraform-diagram (Rover)**. Alle
-diagrammen zijn met Rover gemaakt.
+Dit diagram wordt gemaakt door de workflow **Terraform-diagram (Rover)**.
 
-## Per laag
-
-Rover tekent standaard alle resources en alle afhankelijkheden: bij deze
-omgeving zijn dat 180 knopen, en dat is onleesbaar. Daarom maakt de workflow
-per laag een gerichte `terraform plan -target` en laat Rover daarop los. Elk
-diagram is nog steeds een echte Rover-graaf, maar beperkt tot die laag plus de
-resources die hij nodig heeft.
-
-| Bestand | Laag |
+| Bestand | Wat het is |
 |---|---|
-| `rover/netwerk.svg` | VPC's, subnetten, Transit Gateway, NAT en Route 53 |
-| `rover/beveiliging.svg` | Security Groups, firewall-API en bijbehorende Lambda/API Gateway |
-| `rover/websites.svg` | Webservers, ALB, target group en de app-code in S3 |
-| `rover/databases.svg` | Twee Aurora-clusters, instanties en subnet group |
-| `rover/soar.svg` | ECS, ALB, SQS, EventBridge, Lambda, API Gateway, DynamoDB en SNS |
-| `rover/observability.svg` | Observability-host, loggroepen, alarmen, buckets en DNS |
-| `rover/opslag.svg` | Drie S3-buckets met versioning, levensduur en encryptie |
-| `terraform-rover.svg` | De volledige graaf, als technisch totaalbeeld |
+| `terraform-rover.svg` | De Rover-graaf van de kern van de omgeving. Vector, dus inzoomen zonder kwaliteitsverlies. |
+| `terraform-rover.png` | Dezelfde graaf als PNG, voor een verslag of snelle preview. |
 
-Elke laag heeft ook een **PNG-preview** (`rover/<laag>.png`), handig voor een
-verslag of een snelle blik. De SVG is scherper bij inzoomen.
+## Wat je ziet
+
+Rover tekent de resources uit de Terraform-code. Om het leesbaar te houden,
+bevat de plan alleen de kern: VPC's, Transit Gateway, load balancers,
+servers, ECS, databases, S3, SQS, EventBridge, Lambda, API Gateway,
+DynamoDB, SNS en de DNS-zone. IAM-rollen, route tables, bucket-configuraties
+en SSM-parameters zijn weggelaten; die staan wel in de code.
+
+De plan wordt gemaakt tegen een **lege diagram-state**. Daardoor zijn alle
+resources in het diagram groen: dat is wat de code zou aanmaken. Het is dus
+een code-overzicht, niet de actuele live-state.
 
 ## Opnieuw maken
 
 GitHub → **Actions** → **Terraform-diagram (Rover)** → **Run workflow**.
-De workflow maakt per laag een plan, draait Rover en commit de SVG's.
+De workflow maakt de plan, filtert de kern, draait Rover en commit de SVG en PNG.

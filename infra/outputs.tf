@@ -9,11 +9,6 @@ output "ecr_repository_url" {
   value       = aws_ecr_repository.soar.repository_url
 }
 
-output "codebuild_project_name" {
-  description = "CodeBuild-project dat de SOAR-image bouwt."
-  value       = aws_codebuild_project.soar.name
-}
-
 # ---------------------------------------------------------------- ECS en SOAR
 output "ecs_cluster_name" {
   description = "Naam van het ECS-cluster."

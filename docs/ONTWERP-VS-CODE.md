@@ -163,8 +163,7 @@ bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
 | Zelfstandige runner in AWS | EC2 met label `cs2-runner`, alleen uitgaand verkeer | Afwijkend: egress is niet beperkt tot 443/22/5986; dat zou veel AWS- en GitHub-endpoints vereisen. |
 | OIDC, geen access keys | `aws_iam_openid_connect_provider` + rol in `bootstrap/` | Gerealiseerd |
 | Rol met minimale rechten | `AdministratorAccess` op de OIDC-rol | Afwijkend: demo. In productie opsplitsen per workflow. |
-| Image met commit-SHA | Deploy-workflow bouwt via CodeBuild en pusht `:latest`; `build_push.sh` pusht de git-SHA | Afwijkend: de standaardworkflow gebruikt `latest`, zodat een verse ECR na een apply direct werkt. |
-| Image bouwen zonder Docker | `aws_codebuild_project` + `scripts/build_codebuild.sh` | Aanvulling: handig als de werkplek geen Docker heeft. |
+| Image met commit-SHA | Deploy-workflow bouwt met Docker en pusht de git-SHA en `latest` | Gerealiseerd |
 | Rollback bij falen | ECS deployment circuit breaker | Gerealiseerd |
 | Pipeline is de enige weg | Consolewijzigingen zijn mogelijk | Afwijkend: niet technisch afgedwongen (SCP/permissions boundary ontbreekt). |
 

@@ -34,6 +34,5 @@ cat <<'EOF'
                           curl "http://localhost:8080/audit/recent?limit=10" | jq .
   Serverlogs (Loki)       ./scripts/port-forward.sh grafana  -> Explore -> {job="syslog"}
   Flow logs               aws logs tail /aws/vpc/cs2-dev/flowlogs --follow
-  CodeBuild               aws logs tail /aws/codebuild/cs2-dev-soar-build --follow
   Bestanden op de host    /var/log/remote/<hostnaam>.log (observability-host)
 EOF

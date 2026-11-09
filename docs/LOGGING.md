@@ -123,7 +123,6 @@ Elke logsoort heeft een eigen plek. Dit is de complete kaart:
 | SOAR-applicatie (verwerkte events, fouten) | CloudWatch `/aws/ecs/cs2-dev-soar` | 30 dagen | `./scripts/show_audit.sh --follow` |
 | Netwerkverkeer (VPC Flow Logs) | CloudWatch `/aws/vpc/cs2-dev/flowlogs` | 30 dagen | `aws logs tail /aws/vpc/cs2-dev/flowlogs --follow` |
 | Firewall-Lambda | CloudWatch `/aws/lambda/cs2-dev-firewall-api` | 30 dagen | Console → CloudWatch → Log groups |
-| Image-builds | CloudWatch `/aws/codebuild/cs2-dev-soar-build` | 30 dagen | Console, of de Deploy-run |
 | OS-logs van de servers (syslog) | Loki, en als bestand `/var/log/remote/<host>.log` op de observability-host | 30 dagen (Loki) | Grafana → Explore → `{job="syslog"}` |
 | systemd-journal van de servers | Loki | 30 dagen | Grafana → Explore → `{job="systemd-journal"}` |
 | Audit + incidenten (definitief) | S3 `cs2-dev-audit-…` → `events/` | 365 dagen | `./scripts/show_audit.sh --latest` |
@@ -180,7 +179,7 @@ curl "http://localhost:8080/audit/recent?limit=10" | jq .
 | Waarom crashte de SOAR-container? | CloudWatch `/aws/ecs/cs2-dev-soar` |
 | Wie maakte verbinding met welke poort? | VPC Flow Logs |
 | Wat gebeurde er op de Linux-server zelf? | Loki `{job="syslog"}` |
-| Is de image-build geslaagd? | CloudWatch CodeBuild + Deploy-run |
+| Is de image-build geslaagd? | Deploy-run in GitHub Actions |
 | Wat heeft Ansible aangepast? | S3 `artifacts/reports/` |
 
 ---

@@ -107,7 +107,7 @@ zijn in deze demo bewust niet uitgevoerd.
 | 8-01 | Deploy-run succesvol | GitHub → Actions → Deploy → laatste run | Alle stappen groen, inclusief OIDC-login en Terraform apply |
 | 8-02 | Samenvatting van de uitrol | GitHub → Actions → Deploy-run → Summary | Tabel met terraform-output |
 | 8-03 | OIDC-login zonder vaste sleutels | AWS-console → CloudTrail → Event history → AssumeRoleWithWebIdentity | Event met userIdentity repo:dinandvanderzijden-sketch… en geen AccessDenied |
-| 8-04 | Image gebouwd in AWS | AWS-console → CodeBuild → Build projects → cs2-dev-soar-build → Build history | Laatste build SUCCEEDED; logs tonen docker push |
+| 8-04 | Image gebouwd in de pipeline | GitHub → Actions → Deploy → stap 'SOAR-image bouwen en uitrollen' | Stap groen; ECR bevat de nieuwe tag |
 | 8-05 | Image in het register | ECR → cs2-dev-soar → Images | Tags latest en de commit-SHA |
 | 8-06 | Remote state met versies | S3 → cs2-dev-tfstate-… → cs2/dev/terraform.tfstate → Versions | Meerdere versies; lockfile bij apply |
 | 8-07 | Destroy met bevestiging | GitHub → Actions → Destroy-run | Alleen als je de omgeving bewust hebt uitgezet: stap 'Terraform destroy' groen |

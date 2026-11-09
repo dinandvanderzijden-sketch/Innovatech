@@ -50,8 +50,12 @@ if [[ "$WITH_INFRA" -eq 1 ]]; then
   terraform -chdir="$ROOT/infra" init -input=false -reconfigure
   terraform -chdir="$ROOT/infra" apply -input=false -auto-approve
 
-  info "SOAR-image bouwen en uitrollen"
-  "$ROOT/scripts/build_codebuild.sh"
+  if command -v docker >/dev/null 2>&1; then
+    info "SOAR-image bouwen en uitrollen"
+    "$ROOT/scripts/build_push.sh"
+  else
+    warn "Docker ontbreekt; push naar main en laat de Deploy-workflow de image bouwen."
+  fi
 fi
 
 info "Klaar"

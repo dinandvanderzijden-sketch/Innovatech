@@ -42,7 +42,6 @@ workloadservers, twee SOAR-taken.
 | Secrets Manager | $ 0,40/secret | 4 | $ 1,60 |
 | Route 53 private zone | $ 0,50/zone | 1 | $ 0,50 |
 | SQS, SNS, Lambda, DynamoDB, API Gateway | verbruik | klein | < $ 1,00 |
-| CodeBuild (image-build) | $ 0,005/minuut | ± 5 min per deploy | < $ 0,10 |
 | **Totaal** | | | **± $ 300** |
 
 Aurora Serverless v2 staat op `min_capacity = 0`. Zonder verbindingen schaalt
@@ -75,12 +74,6 @@ praktijk blijft het ver onder dat maximum.
    zijn. De SOAR houdt normaal een verbinding vast zolang hij draait.
 6. **Geen 24/7:** gebruik de omgeving alleen tijdens het werken aan je
    verslag en de demo.
-
-## Budgetalarm
-
-Terraform maakt een budget van $ 100 per maand aan zodra `alert_email` is
-ingevuld. Je krijgt een melding bij 80% van dat budget. Het budget stopt
-niets; het is alleen een signaal.
 
 ## Wat niet in de schatting zit
 

@@ -115,7 +115,7 @@ jobs:
 
       - name: SOAR-image bouwen en uitrollen
         working-directory: .
-        run: ./scripts/build_codebuild.sh
+        run: ./scripts/build_push.sh
 
       - name: Samenvatting
         working-directory: .

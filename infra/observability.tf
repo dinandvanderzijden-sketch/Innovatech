@@ -448,22 +448,3 @@ resource "aws_cloudwatch_metric_alarm" "soar_unhealthy" {
     TargetGroup  = aws_lb_target_group.soar.arn_suffix
   }
 }
-
-# ---------------------------------------------------------------- budget
-resource "aws_budgets_budget" "monthly" {
-  count = var.alert_email == "" ? 0 : 1
-
-  name         = "${local.name}-monthly"
-  budget_type  = "COST"
-  limit_amount = "100"
-  limit_unit   = "USD"
-  time_unit    = "MONTHLY"
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = [var.alert_email]
-  }
-}

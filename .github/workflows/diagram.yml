@@ -1,8 +1,8 @@
 name: Terraform-diagram (Rover)
 
-# Maakt Rover-visualisaties van de Terraform-configuratie en commit ze naar
-# docs/diagram/. Eén volledige plan wordt gefilterd per laag, zodat elk
-# diagram leesbaar is. Draait met OIDC, zonder vaste AWS-sleutels.
+# Maakt één Rover-visualisatie van de kern van de omgeving en commit de SVG
+# naar docs/diagram/. De plan wordt tegen een lege diagram-state gemaakt,
+# zodat het diagram laat zien wat de code bouwt (groene creates).
 on:
   workflow_dispatch:
   push:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   rover:
-    name: Rover-diagrammen maken
+    name: Rover-diagram maken
     # 22.04: op 24.04 blokkeert AppArmor de Chrome-sandbox die Rover voor -genImage gebruikt.
     runs-on: ubuntu-22.04
     steps:
@@ -40,11 +40,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN || 'arn:aws:iam::491799435972:role/cs2-dev-github' }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Terraform init en volledige plan
+      - name: Plan tegen een lege diagram-state
         run: |
-          terraform -chdir=infra init -input=false
-          terraform -chdir=infra plan -input=false -lock-timeout=60s -out=plan.out
-          terraform -chdir=infra show -json plan.out > plan.json
+          terraform -chdir=infra init -input=false -reconfigure \
+            -backend-config="key=cs2/dev/diagram.tfstate"
+          terraform -chdir=infra plan -input=false -lock-timeout=60s -out=plan-diagram.out
+          terraform -chdir=infra show -json plan-diagram.out > plan.json
 
       - name: Rover downloaden
         run: |
@@ -54,43 +55,21 @@ jobs:
           mv "rover_v${ROVER_VERSION}" rover
           chmod +x rover
 
-      - name: Plan per laag filteren
-        run: python3 scripts/rover_layers.py plan.json
+      - name: Kern filteren
+        run: python3 scripts/rover_core.py plan.json
 
-      - name: Rover per laag
+      - name: Rover draaien
         run: |
-          mkdir -p docs/diagram/rover
-          for f in rover-plans/*.json; do
-            name="$(basename "$f" .json)"
-            echo "== $name =="
-            if ./rover -planJSONPath="$f" -genImage true >"docs/diagram/rover/$name.log" 2>&1 \
-               && [ -f rover.svg ]; then
-              mv rover.svg "docs/diagram/rover/$name.svg"
-              rm -f "docs/diagram/rover/$name.log"
-            else
-              echo "Rover faalde voor $name; log wordt bewaard."
-            fi
-          done
-          ls -la docs/diagram/rover/
+          ./rover -planJSONPath=plan-core.json -genImage true
+          mkdir -p docs/diagram
+          cp rover.svg docs/diagram/terraform-rover.svg
+          ls -lh docs/diagram/terraform-rover.svg
 
-      - name: Volledige graaf
-        run: |
-          if ./rover -planJSONPath=plan.json -genImage true; then
-            cp rover.svg docs/diagram/terraform-rover.svg
-          else
-            echo "Volledige Rover-graaf mislukt."
-          fi
-
-      - name: PNG-previews maken
+      - name: PNG-preview maken
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq librsvg2-bin
-          for f in docs/diagram/rover/*.svg; do
-            rsvg-convert -w 2000 "$f" -o "${f%.svg}.png"
-          done
-          if [ -f docs/diagram/terraform-rover.svg ]; then
-            rsvg-convert -w 2400 docs/diagram/terraform-rover.svg -o docs/diagram/terraform-rover.png
-          fi
+          rsvg-convert -w 2400 docs/diagram/terraform-rover.svg -o docs/diagram/terraform-rover.png
 
       - name: Diagrammen committen
         if: always()
@@ -99,8 +78,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/diagram
           if git diff --cached --quiet; then
-            echo "Geen wijziging in de diagrammen."
+            echo "Geen wijziging in het diagram."
           else
-            git commit -m "Diagrammen: Rover per laag bijgewerkt"
+            git commit -m "Diagram: Rover-overzicht bijgewerkt"
             git push
           fi
