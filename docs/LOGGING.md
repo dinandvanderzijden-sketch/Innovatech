@@ -60,7 +60,7 @@ in, met de regel die vuurde en de acties die zijn uitgevoerd.
 | `payload` | Het volledige originele event (JSON) |
 
 De tabel wordt bij de eerste verbinding automatisch aangemaakt
-(`CREATE TABLE IF NOT EXISTS` in `soar/app/audit.py`). Er is geen update- of
+(`CREATE TABLE IF NOT EXISTS` in `soar/app/effects.py`). Er is geen update- of
 delete-pad: auditregels worden alleen toegevoegd.
 
 ### Websitedatabase

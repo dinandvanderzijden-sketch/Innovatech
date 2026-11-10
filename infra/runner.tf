@@ -98,6 +98,5 @@ resource "aws_instance" "workload" {
     aws_secretsmanager_secret_version.web_db,
     aws_s3_object.webapp,
     aws_iam_role_policy.workload_app,
-    aws_key_pair.ansible,
   ]
 }

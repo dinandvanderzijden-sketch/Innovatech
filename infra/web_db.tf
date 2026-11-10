@@ -76,8 +76,8 @@ resource "aws_rds_cluster" "web" {
   apply_immediately       = true
 
   serverlessv2_scaling_configuration {
-    min_capacity = 0
-    max_capacity = 2
+    min_capacity = var.aurora_min_acu
+    max_capacity = var.aurora_max_acu
   }
 
   tags = { Name = "${local.name}-web-aurora" }

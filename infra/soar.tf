@@ -48,7 +48,7 @@ resource "aws_sqs_queue" "events" {
 
 data "aws_iam_policy_document" "events_queue" {
   statement {
-    sid       = "AllowEventBridgeAlarms"
+    sid       = "AllowEventBridge"
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.events.arn]
 
@@ -60,24 +60,10 @@ data "aws_iam_policy_document" "events_queue" {
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
-      values   = [aws_cloudwatch_event_rule.alarm.arn]
-    }
-  }
-
-  statement {
-    sid       = "AllowEventBridgeFindings"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.events.arn]
-
-    principals {
-      type        = "Service"
-      identifiers = ["events.amazonaws.com"]
-    }
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values   = [aws_cloudwatch_event_rule.finding.arn]
+      values = [
+        aws_cloudwatch_event_rule.alarm.arn,
+        aws_cloudwatch_event_rule.finding.arn,
+      ]
     }
   }
 }
@@ -125,18 +111,6 @@ resource "aws_dynamodb_table" "blocked_ips" {
 }
 
 # ---------------------------------------------------------------- firewall-API (simulatie)
-resource "aws_secretsmanager_secret" "firewall_api" {
-  name                    = "${local.name}/firewall-api"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "firewall_api" {
-  secret_id = aws_secretsmanager_secret.firewall_api.id
-  secret_string = jsonencode({
-    api_key = random_password.firewall_api.result
-  })
-}
-
 data "archive_file" "firewall_api" {
   type        = "zip"
   source_file = "${path.module}/../lambda/firewall_api.py"
@@ -176,90 +150,6 @@ resource "aws_lambda_function" "firewall_api" {
   ]
 
   tags = { Name = "${local.name}-firewall-api" }
-}
-
-resource "aws_api_gateway_rest_api" "firewall" {
-  name        = "${local.name}-firewall-api"
-  description = "Gesimuleerde firewall-API voor IP-blokkades"
-  endpoint_configuration { types = ["REGIONAL"] }
-}
-
-resource "aws_api_gateway_resource" "block" {
-  rest_api_id = aws_api_gateway_rest_api.firewall.id
-  parent_id   = aws_api_gateway_rest_api.firewall.root_resource_id
-  path_part   = "block"
-}
-
-resource "aws_api_gateway_method" "block" {
-  rest_api_id      = aws_api_gateway_rest_api.firewall.id
-  resource_id      = aws_api_gateway_resource.block.id
-  http_method      = "POST"
-  authorization    = "NONE"
-  api_key_required = true
-}
-
-resource "aws_api_gateway_integration" "block" {
-  rest_api_id             = aws_api_gateway_rest_api.firewall.id
-  resource_id             = aws_api_gateway_resource.block.id
-  http_method             = aws_api_gateway_method.block.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.firewall_api.invoke_arn
-}
-
-resource "aws_lambda_permission" "firewall_api" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.firewall_api.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.firewall.execution_arn}/*/*"
-}
-
-resource "aws_api_gateway_deployment" "firewall" {
-  rest_api_id = aws_api_gateway_rest_api.firewall.id
-
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.block.id,
-      aws_api_gateway_method.block.id,
-      aws_api_gateway_integration.block.id,
-    ]))
-  }
-
-  lifecycle { create_before_destroy = true }
-
-  depends_on = [aws_api_gateway_integration.block]
-}
-
-resource "aws_api_gateway_stage" "firewall" {
-  rest_api_id   = aws_api_gateway_rest_api.firewall.id
-  deployment_id = aws_api_gateway_deployment.firewall.id
-  stage_name    = "prod"
-}
-
-resource "aws_api_gateway_api_key" "firewall" {
-  name  = "${local.name}-firewall-key"
-  value = random_password.firewall_api.result
-}
-
-resource "aws_api_gateway_usage_plan" "firewall" {
-  name = "${local.name}-firewall-usage"
-
-  api_stages {
-    api_id = aws_api_gateway_rest_api.firewall.id
-    stage  = aws_api_gateway_stage.firewall.stage_name
-  }
-
-  throttle_settings {
-    burst_limit = 20
-    rate_limit  = 10
-  }
-}
-
-resource "aws_api_gateway_usage_plan_key" "firewall" {
-  key_id        = aws_api_gateway_api_key.firewall.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.firewall.id
 }
 
 # ---------------------------------------------------------------- load balancer
@@ -349,12 +239,11 @@ resource "aws_ecs_task_definition" "soar" {
       environment = [
         { name = "AWS_REGION", value = var.aws_region },
         { name = "QUEUE_URL", value = aws_sqs_queue.events.url },
-        { name = "DLQ_URL", value = aws_sqs_queue.events_dlq.url },
         { name = "DEDUPE_TABLE", value = aws_dynamodb_table.dedupe.name },
         { name = "AUDIT_BUCKET", value = aws_s3_bucket.audit.bucket },
         { name = "QUARANTINE_PREFIX", value = "quarantine" },
         { name = "SNS_TOPIC_ARN", value = aws_sns_topic.alerts.arn },
-        { name = "FIREWALL_API_URL", value = "${aws_api_gateway_stage.firewall.invoke_url}/block" },
+        { name = "FIREWALL_FUNCTION_NAME", value = aws_lambda_function.firewall_api.function_name },
         { name = "DB_HOST", value = aws_rds_cluster.soar.endpoint },
         { name = "DB_PORT", value = "5432" },
         { name = "DB_NAME", value = "soar" },
@@ -366,7 +255,6 @@ resource "aws_ecs_task_definition" "soar" {
       secrets = [
         { name = "DB_USER", valueFrom = "${aws_secretsmanager_secret.db.arn}:username::" },
         { name = "DB_PASSWORD", valueFrom = "${aws_secretsmanager_secret.db.arn}:password::" },
-        { name = "FIREWALL_API_KEY", valueFrom = "${aws_secretsmanager_secret.firewall_api.arn}:api_key::" },
       ]
 
       logConfiguration = {
@@ -376,14 +264,6 @@ resource "aws_ecs_task_definition" "soar" {
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "soar"
         }
-      }
-
-      healthCheck = {
-        command     = ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')\""]
-        interval    = 30
-        timeout     = 5
-        retries     = 3
-        startPeriod = 60
       }
     }
   ])

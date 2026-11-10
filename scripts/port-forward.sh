@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Opent een SSM-portforwarding-sessie naar Grafana of de SOAR.
+# Opent een SSM-portforwarding-sessie naar Grafana, de SOAR of de website.
 #
 #   ./scripts/port-forward.sh grafana [local-port]
 #   ./scripts/port-forward.sh soar    [local-port]
@@ -10,45 +10,46 @@ source "$(dirname "$0")/lib.sh"
 require aws
 
 WHAT="${1:-grafana}"
-LOCAL_PORT="${2:-}"
+PORT="${2:-}"
+REGION="$(aws_region)"
 
 case "$WHAT" in
   grafana)
     TARGET="$(tf_output observability_instance_id)"
-    LOCAL_PORT="${LOCAL_PORT:-3000}"
-    info "Grafana: http://localhost:${LOCAL_PORT} (blijft open tot je Ctrl+C typt)"
-    info "Inloggen: admin / wachtwoord uit Secrets Manager (zie docs/DEMO.md)."
-    exec aws ssm start-session --region "$(aws_region)" \
-      --target "$TARGET" \
-      --document-name AWS-StartPortForwardingSession \
-      --parameters "{\"portNumber\":[\"3000\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+    PORT="${PORT:-3000}"
+    LABEL="Grafana"
+    DOC="AWS-StartPortForwardingSession"
+    PARAMS="{\"portNumber\":[\"3000\"],\"localPortNumber\":[\"${PORT}\"]}"
     ;;
-
   soar)
     TARGET="$(tf_output runner_instance_id)"
     ALB="$(tf_output soar_alb_dns)"
-    LOCAL_PORT="${LOCAL_PORT:-8080}"
-    info "SOAR: http://localhost:${LOCAL_PORT} (blijft open tot je Ctrl+C typt)"
-    exec aws ssm start-session --region "$(aws_region)" \
-      --target "$TARGET" \
-      --document-name AWS-StartPortForwardingSessionToRemoteHost \
-      --parameters "{\"host\":[\"${ALB}\"],\"portNumber\":[\"80\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+    PORT="${PORT:-8080}"
+    LABEL="SOAR"
+    DOC="AWS-StartPortForwardingSessionToRemoteHost"
+    PARAMS="{\"host\":[\"${ALB}\"],\"portNumber\":[\"80\"],\"localPortNumber\":[\"${PORT}\"]}"
     ;;
-
   web)
     TARGET="$(tf_output runner_instance_id)"
     ALB="$(tf_output soar_alb_dns)"
-    LOCAL_PORT="${LOCAL_PORT:-8081}"
-    info "Website: http://localhost:${LOCAL_PORT} (blijft open tot je Ctrl+C typt)"
-    info "Ververs de pagina om te zien welke server antwoordt."
-    exec aws ssm start-session --region "$(aws_region)" \
-      --target "$TARGET" \
-      --document-name AWS-StartPortForwardingSessionToRemoteHost \
-      --parameters "{\"host\":[\"${ALB}\"],\"portNumber\":[\"8080\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+    PORT="${PORT:-8081}"
+    LABEL="Website"
+    DOC="AWS-StartPortForwardingSessionToRemoteHost"
+    PARAMS="{\"host\":[\"${ALB}\"],\"portNumber\":[\"8080\"],\"localPortNumber\":[\"${PORT}\"]}"
     ;;
-
   *)
     echo "Kies 'grafana', 'soar' of 'web'." >&2
     exit 1
     ;;
 esac
+
+info "${LABEL}: http://localhost:${PORT} (blijft open tot je Ctrl+C typt)"
+if [[ "$WHAT" == "grafana" ]]; then
+  info "Inloggen: admin / wachtwoord uit Secrets Manager (zie docs/DEMO.md)."
+fi
+if [[ "$WHAT" == "web" ]]; then
+  info "Ververs de pagina om te zien welke server antwoordt."
+fi
+
+exec aws ssm start-session --region "$REGION" --target "$TARGET" \
+  --document-name "$DOC" --parameters "$PARAMS"

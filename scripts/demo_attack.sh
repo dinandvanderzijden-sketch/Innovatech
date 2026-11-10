@@ -32,19 +32,7 @@ case "$MODE" in
 JSON
 )"
 
-    COMMAND_ID="$(aws ssm send-command --region "$REGION" \
-      --instance-ids "$INSTANCE_ID" \
-      --document-name AWS-RunShellScript \
-      --comment "CS2 demo CPU-belasting" \
-      --parameters "$PARAMETERS" \
-      --query 'Command.CommandId' --output text)"
-
-    aws ssm wait command-executed --region "$REGION" \
-      --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" || true
-
-    aws ssm get-command-invocation --region "$REGION" \
-      --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
-      --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
+    ssm_run "$INSTANCE_ID" "CS2 demo CPU-belasting" "$PARAMETERS" "$REGION"
 
     info "Wacht op het alarm (ongeveer 5-10 minuten). Volg de SOAR met:"
     echo "  ./scripts/show_audit.sh --follow"
@@ -57,28 +45,30 @@ JSON
       --alarm-name "$ALARM_NAME" --description "CPU boven 80% (demo)"
     ;;
 
-  brute)
-    info "Brute-force-bevinding sturen met bron-IP 203.0.113.7"
+  brute|scan|malware)
+    case "$MODE" in
+      brute)
+        TITLE="SSH brute force gedetecteerd"
+        DESC="42 mislukte SSH-logins in 60 seconden"
+        SEV=high
+        IP=203.0.113.7
+        ;;
+      scan)
+        TITLE="Poortscan gedetecteerd"
+        DESC="Meer dan 1000 poorten gescand in 30 seconden"
+        SEV=medium
+        IP=203.0.113.7
+        ;;
+      malware)
+        TITLE="Malware en command-and-control verkeer"
+        DESC="Verdacht uitgaand verkeer naar een bekend C2-domein"
+        SEV=critical
+        IP=198.51.100.23
+        ;;
+    esac
+    info "Bevinding sturen: ${TITLE}"
     python3 "$ROOT/scripts/send_event.py" --mode finding --region "$REGION" \
-      --title "SSH brute force gedetecteerd" \
-      --description "42 mislukte SSH-logins in 60 seconden" \
-      --severity high --ip 203.0.113.7
-    ;;
-
-  scan)
-    info "Poortscan-bevinding sturen met bron-IP 203.0.113.7"
-    python3 "$ROOT/scripts/send_event.py" --mode finding --region "$REGION" \
-      --title "Poortscan gedetecteerd" \
-      --description "Meer dan 1000 poorten gescand in 30 seconden" \
-      --severity medium --ip 203.0.113.7
-    ;;
-
-  malware)
-    info "Malware-bevinding sturen"
-    python3 "$ROOT/scripts/send_event.py" --mode finding --region "$REGION" \
-      --title "Malware en command-and-control verkeer" \
-      --description "Verdacht uitgaand verkeer naar een bekend C2-domein" \
-      --severity critical --ip 198.51.100.23
+      --title "$TITLE" --description "$DESC" --severity "$SEV" --ip "$IP"
     ;;
 
   *)

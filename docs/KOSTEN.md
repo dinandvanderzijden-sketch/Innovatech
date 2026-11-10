@@ -39,9 +39,9 @@ workloadservers, twee SOAR-taken.
 | Prometheus (container op de observability-host) | inbegrepen | — | $ 0,00 |
 | S3 (drie buckets) | $ 0,0245/GB-maand | < 5 GB | $ 0,15 |
 | CloudWatch Logs | ~$ 0,60/GB ingest | < 2 GB | $ 0 – 1,50 |
-| Secrets Manager | $ 0,40/secret | 4 | $ 1,60 |
+| Secrets Manager | $ 0,40/secret | 3 | $ 1,20 |
 | Route 53 private zone | $ 0,50/zone | 1 | $ 0,50 |
-| SQS, SNS, Lambda, DynamoDB, API Gateway | verbruik | klein | < $ 1,00 |
+| SQS, SNS, Lambda, DynamoDB | verbruik | klein | < $ 1,00 |
 | CodeBuild (image-build) | $ 0,005/minuut | ± 5 min per deploy | < $ 0,10 |
 | **Totaal** | | | **± $ 300** |
 

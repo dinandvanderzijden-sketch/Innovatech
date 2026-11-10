@@ -143,7 +143,7 @@ systemctl daemon-reload
 systemctl enable --now cs2-web
 systemctl enable --now nginx
 
-# ---------------------------------------------------------------- Alloy# ---------------------------------------------------------------- Alloy
+# ---------------------------------------------------------------- Alloy
 curl -fsSL -o /tmp/alloy.zip \
   "https://github.com/grafana/alloy/releases/download/v$ALLOY_VERSION/alloy-linux-amd64.zip"
 unzip -o /tmp/alloy.zip -d /usr/local/bin

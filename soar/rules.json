@@ -1,88 +1,95 @@
 {
-  "version": 1,
+  "version": 2,
   "rules": [
     {
       "id": "R-110",
       "name": "Aanval vanaf een IP-adres",
       "enabled": true,
       "priority": 200,
-      "severity": "high",
-      "min_severity": "medium",
-      "sources": ["cs2.demo", "aws.guardduty"],
-      "detail_types": ["CS2 Security Finding"],
-      "title_regex": "(?i)(attack|scan|brute|firewall|recon)",
-      "require_source_ip": true,
-      "actions": ["block_ip", "notify"]
+      "when": {
+        "sources": ["cs2.demo", "aws.guardduty"],
+        "detail_types": ["CS2 Security Finding"],
+        "min_severity": "medium",
+        "title_contains": ["attack", "scan", "brute", "firewall", "recon"],
+        "has_source_ip": true
+      },
+      "then": ["block_ip", "notify"]
     },
     {
       "id": "SOAR-003",
       "name": "Malware of command-and-control",
       "enabled": true,
       "priority": 180,
-      "severity": "critical",
-      "min_severity": "medium",
-      "sources": ["cs2.demo", "aws.guardduty"],
-      "detail_types": ["CS2 Security Finding"],
-      "title_regex": "(?i)(malware|ransom|c2|beacon|command.and.control)",
-      "actions": ["quarantine", "notify"]
+      "when": {
+        "sources": ["cs2.demo", "aws.guardduty"],
+        "detail_types": ["CS2 Security Finding"],
+        "min_severity": "medium",
+        "title_contains": ["malware", "ransom", "c2", "beacon", "command and control"]
+      },
+      "then": ["quarantine", "notify"]
     },
     {
       "id": "R-120",
       "name": "Misbruik van rechten (privilege-escalatie)",
       "enabled": true,
       "priority": 150,
-      "severity": "critical",
-      "min_severity": "critical",
-      "sources": ["cs2.demo", "aws.guardduty"],
-      "detail_types": ["CS2 Security Finding"],
-      "title_regex": "(?i)(privilege|sudo|escalat)",
-      "actions": ["notify"]
+      "when": {
+        "sources": ["cs2.demo", "aws.guardduty"],
+        "detail_types": ["CS2 Security Finding"],
+        "min_severity": "critical",
+        "title_contains": ["privilege", "sudo", "escalat"]
+      },
+      "then": ["notify"]
     },
     {
       "id": "SOAR-005",
       "name": "Platformalarm (SOAR of load balancer)",
       "enabled": true,
       "priority": 120,
-      "severity": "high",
-      "min_severity": "medium",
-      "sources": ["aws.cloudwatch"],
-      "detail_types": ["CloudWatch Alarm State Change"],
-      "title_regex": "(?i)(5xx|unhealthy|soar|dlq|no-data)",
-      "actions": ["notify"]
+      "when": {
+        "sources": ["aws.cloudwatch"],
+        "detail_types": ["CloudWatch Alarm State Change"],
+        "min_severity": "medium",
+        "title_contains": ["5xx", "unhealthy", "soar", "dlq", "no-data"]
+      },
+      "then": ["notify"]
     },
     {
       "id": "R-100",
       "name": "Veel mislukte logins",
       "enabled": true,
       "priority": 100,
-      "severity": "high",
-      "min_severity": "high",
-      "sources": ["cs2.demo", "aws.guardduty"],
-      "detail_types": ["CS2 Security Finding"],
-      "title_regex": "(?i)(login|auth|credential)",
-      "require_source_ip": true,
-      "actions": ["notify"]
+      "when": {
+        "sources": ["cs2.demo", "aws.guardduty"],
+        "detail_types": ["CS2 Security Finding"],
+        "min_severity": "high",
+        "title_contains": ["login", "auth", "credential"],
+        "has_source_ip": true
+      },
+      "then": ["notify"]
     },
     {
       "id": "SOAR-001",
       "name": "Hoge CPU-belasting",
       "enabled": true,
       "priority": 50,
-      "severity": "medium",
-      "min_severity": "medium",
-      "sources": ["aws.cloudwatch"],
-      "detail_types": ["CloudWatch Alarm State Change"],
-      "title_regex": "(?i)cpu",
-      "actions": ["notify"]
+      "when": {
+        "sources": ["aws.cloudwatch"],
+        "detail_types": ["CloudWatch Alarm State Change"],
+        "min_severity": "medium",
+        "title_contains": ["cpu"]
+      },
+      "then": ["notify"]
     },
     {
       "id": "SOAR-006",
       "name": "Kritieke bevinding: altijd melden",
       "enabled": true,
       "priority": 10,
-      "severity": "critical",
-      "min_severity": "critical",
-      "actions": ["notify"]
+      "when": {
+        "min_severity": "critical"
+      },
+      "then": ["notify"]
     }
   ]
 }

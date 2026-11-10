@@ -36,7 +36,7 @@ zijn in deze demo bewust niet uitgevoerd.
 | 2-04 | Firewall-API blokkeert een IP | DynamoDB → Tables → cs2-dev-blocked-ips → Explore table items | Regel met ip 203.0.113.7 en de reden 'SSH brute force gedetecteerd' |
 | 2-05 | Het bewijs van de blokkade-aanroep | Terminal: ./scripts/demo_attack.sh brute | FailedEntryCount 0 en 'Event geaccepteerd'; daarna regel in de tabel |
 | 2-06 | Netwerkverkeer wordt vastgelegd | CloudWatch → Log groups → /aws/vpc/cs2-dev/flowlogs | Stroomregels met bron- en doelIP, poort en ACCEPT of REJECT |
-| 2-07 | De API-key staat in Secrets Manager | Secrets Manager → cs2-dev/firewall-api | Geheim bestaat; waarde is niet in de code |
+| 2-07 | De firewall-Lambda is alleen via IAM bereikbaar | IAM → rollen → cs2-dev-soar-task → policy | `lambda:InvokeFunction` op de firewall-Lambda; geen publiek endpoint |
 | ⚠️ | _Let op_ | SSM-sessielogging en secret-rotatie zijn in deze demo niet ingericht. Neem dat op als bewuste keuze, niet als vergeten. | |
 
 ## 3. Websites en load balancing
@@ -97,7 +97,7 @@ zijn in deze demo bewust niet uitgevoerd.
 | 7-05 | Verwerking in de logs | CloudWatch → Log groups → /aws/ecs/cs2-dev-soar | Regels 'Event … heeft regel R-110' en 'Audit opgeslagen' |
 | 7-06 | Regelset en health | Terminal: curl http://localhost:8080/rules (na port-forward soar) | count 7 en de regels R-100 tot SOAR-006 |
 | 7-07 | Auditrecords in Aurora via de API | Terminal: curl "http://localhost:8080/audit/recent?limit=3" | Laatste events met rules en actions |
-| 7-08 | Testrapport van de regelmotor | Terminal: cd soar && pytest -q | 8 passed |
+| 7-08 | Testrapport van de regelmotor | Terminal: cd soar && pytest -q | 10 passed |
 | ⚠️ | _Let op_ | de SNS-melding komt pas binnen als je de bevestigingsmail van AWS hebt goedgekeurd (status PendingConfirmation → Confirmed in SNS → Subscriptions). | |
 
 ## 8. DevOps, CI/CD en beheer

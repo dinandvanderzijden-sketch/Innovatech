@@ -21,8 +21,6 @@ hostnames:
 
 compose:
   ansible_host: private_ip_address
-  ansible_user: "'ec2-user'"
-  ansible_ssh_private_key_file: "'/home/ec2-user/.ssh/ansible'"
 
 groups:
   workload: "tags.Role == 'workload'"

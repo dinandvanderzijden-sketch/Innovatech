@@ -49,20 +49,8 @@ PARAMETERS="$(jq -n --arg repo "$REPO" --arg token "$TOKEN" '{
   ]
 }')"
 
-COMMAND_ID="$(aws ssm send-command --region "$REGION" \
-  --instance-ids "$INSTANCE_ID" \
-  --document-name AWS-RunShellScript \
-  --comment "CS2 runner registreren" \
-  --parameters "$PARAMETERS" \
-  --query 'Command.CommandId' --output text)"
-
-info "Wachten op de registratie (${COMMAND_ID})"
-aws ssm wait command-executed --region "$REGION" \
-  --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" || true
-
-aws ssm get-command-invocation --region "$REGION" \
-  --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" \
-  --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
+info "Wachten op de registratie"
+ssm_run "$INSTANCE_ID" "CS2 runner registreren" "$PARAMETERS" "$REGION"
 
 info "Klaar. De runner heeft het label 'cs2-runner'."
 echo "Controleer in GitHub: Settings -> Actions -> Runners."

@@ -71,7 +71,7 @@ Terraform maakt onder andere:
 - een interne ALB met twee SOAR-taken op ECS Fargate;
 - Aurora Serverless v2, SQS + DLQ, DynamoDB en drie S3-buckets;
 - CloudWatch-alarmen, EventBridge-regels en een SNS-topic;
-- een gesimuleerde firewall-API (API Gateway → Lambda → DynamoDB).
+- een gesimuleerde firewall-API (Lambda → DynamoDB, aangeroepen via IAM).
 
 Na afloop zie je de belangrijkste waarden:
 

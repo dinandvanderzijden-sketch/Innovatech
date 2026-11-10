@@ -1,40 +1,21 @@
 # ---------------------------------------------------------------- assumable roles
-data "aws_iam_policy_document" "ec2_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
+locals {
+  assume_services = {
+    ec2      = "ec2.amazonaws.com"
+    ecs      = "ecs-tasks.amazonaws.com"
+    lambda   = "lambda.amazonaws.com"
+    flowlogs = "vpc-flow-logs.amazonaws.com"
   }
 }
 
-data "aws_iam_policy_document" "ecs_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
-}
+data "aws_iam_policy_document" "assume" {
+  for_each = local.assume_services
 
-data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "flowlogs_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["vpc-flow-logs.amazonaws.com"]
+      identifiers = [each.value]
     }
   }
 }
@@ -42,7 +23,7 @@ data "aws_iam_policy_document" "flowlogs_assume" {
 # ---------------------------------------------------------------- workload EC2
 resource "aws_iam_role" "workload" {
   name               = "${local.name}-workload"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["ec2"].json
 }
 
 resource "aws_iam_role_policy_attachment" "workload_ssm" {
@@ -78,7 +59,7 @@ resource "aws_iam_instance_profile" "workload" {
 # ---------------------------------------------------------------- observability EC2
 resource "aws_iam_role" "observability" {
   name               = "${local.name}-observability"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["ec2"].json
 }
 
 resource "aws_iam_role_policy_attachment" "observability_ssm" {
@@ -146,7 +127,7 @@ resource "aws_iam_instance_profile" "observability" {
 # ---------------------------------------------------------------- runner EC2
 resource "aws_iam_role" "runner" {
   name               = "${local.name}-runner"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["ec2"].json
 }
 
 resource "aws_iam_role_policy_attachment" "runner_ssm" {
@@ -205,7 +186,7 @@ resource "aws_iam_instance_profile" "runner" {
 # ---------------------------------------------------------------- ECS
 resource "aws_iam_role" "ecs_execution" {
   name               = "${local.name}-ecs-execution"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["ecs"].json
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution" {
@@ -215,11 +196,8 @@ resource "aws_iam_role_policy_attachment" "ecs_execution" {
 
 data "aws_iam_policy_document" "ecs_execution_secrets" {
   statement {
-    actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      aws_secretsmanager_secret.db.arn,
-      aws_secretsmanager_secret.firewall_api.arn,
-    ]
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.db.arn]
   }
 }
 
@@ -231,7 +209,7 @@ resource "aws_iam_role_policy" "ecs_execution_secrets" {
 
 resource "aws_iam_role" "soar_task" {
   name               = "${local.name}-soar-task"
-  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["ecs"].json
 }
 
 data "aws_iam_policy_document" "soar_task" {
@@ -272,9 +250,9 @@ data "aws_iam_policy_document" "soar_task" {
   }
 
   statement {
-    sid       = "FirewallApiKey"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.firewall_api.arn]
+    sid       = "FirewallInvoke"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.firewall_api.arn]
   }
 
   statement {
@@ -304,7 +282,7 @@ resource "aws_iam_role_policy" "soar_task" {
 # ---------------------------------------------------------------- Lambda
 resource "aws_iam_role" "firewall_lambda" {
   name               = "${local.name}-firewall-lambda"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["lambda"].json
 }
 
 resource "aws_iam_role_policy_attachment" "firewall_lambda_vpc" {
@@ -321,11 +299,6 @@ data "aws_iam_policy_document" "firewall_lambda" {
     ]
     resources = [aws_dynamodb_table.blocked_ips.arn]
   }
-
-  statement {
-    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-    resources = ["${aws_cloudwatch_log_group.firewall_lambda.arn}:*"]
-  }
 }
 
 resource "aws_iam_role_policy" "firewall_lambda" {
@@ -337,7 +310,7 @@ resource "aws_iam_role_policy" "firewall_lambda" {
 # ---------------------------------------------------------------- flow logs
 resource "aws_iam_role" "flow_logs" {
   name               = "${local.name}-flow-logs"
-  assume_role_policy = data.aws_iam_policy_document.flowlogs_assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume["flowlogs"].json
 }
 
 data "aws_iam_policy_document" "flow_logs" {

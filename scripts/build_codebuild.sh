@@ -54,10 +54,8 @@ BUILD_ID="$(aws codebuild start-build --region "$REGION" \
 
 info "Build: ${BUILD_ID}"
 for _ in $(seq 1 120); do
-  STATUS="$(aws codebuild batch-get-builds --region "$REGION" --ids "$BUILD_ID" \
-    --query 'builds[0].buildStatus' --output text)"
-  PHASE="$(aws codebuild batch-get-builds --region "$REGION" --ids "$BUILD_ID" \
-    --query 'builds[0].currentPhase' --output text)"
+  read -r STATUS PHASE STREAM <<< "$(aws codebuild batch-get-builds --region "$REGION" --ids "$BUILD_ID" \
+    --query 'builds[0].[buildStatus,currentPhase,logs.streamName]' --output text)" || true
   printf '  %-12s %s\n' "$STATUS" "$PHASE"
   case "$STATUS" in
     SUCCEEDED) break ;;
@@ -65,8 +63,7 @@ for _ in $(seq 1 120); do
       warn "Build mislukt. Laatste regels:"
       aws logs get-log-events --region "$REGION" \
         --log-group-name "/aws/codebuild/${PROJECT}" \
-        --log-stream-name "$(aws codebuild batch-get-builds --region "$REGION" --ids "$BUILD_ID" \
-          --query 'builds[0].logs.streamName' --output text)" \
+        --log-stream-name "$STREAM" \
         --limit 40 --query 'events[].message' --output text || true
       exit 1
       ;;
@@ -74,19 +71,18 @@ for _ in $(seq 1 120); do
   sleep 10
 done
 
+if [[ "$STATUS" != "SUCCEEDED" ]]; then
+  warn "Build is niet binnen 20 minuten geslaagd."
+  exit 1
+fi
+
 info "Nieuwe deployment starten"
 aws ecs update-service --region "$REGION" \
   --cluster "$CLUSTER" --service "$SERVICE" \
   --force-new-deployment >/dev/null
 
 info "Wachten tot de service stabiel is (max. 10 minuten)"
-aws ecs wait services-stable --region "$REGION" \
-  --cluster "$CLUSTER" --services "$SERVICE" || {
-  warn "Service nog niet stabiel:"
-  aws ecs describe-services --region "$REGION" --cluster "$CLUSTER" --services "$SERVICE" \
-    --query 'services[0].events[:10].[createdAt,message]' --output table
-  exit 1
-}
+wait_for_service "$REGION" "$CLUSTER" "$SERVICE"
 
 info "Klaar. SOAR draait met de nieuwe image."
 aws ecs describe-services --region "$REGION" --cluster "$CLUSTER" --services "$SERVICE" \

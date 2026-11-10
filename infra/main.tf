@@ -81,8 +81,3 @@ resource "random_password" "grafana" {
   length  = 24
   special = false
 }
-
-resource "random_password" "firewall_api" {
-  length  = 32
-  special = false
-}

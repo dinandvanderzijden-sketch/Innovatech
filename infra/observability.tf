@@ -307,17 +307,21 @@ resource "aws_ssm_parameter" "log_target" {
 }
 
 # ---------------------------------------------------------------- Grafana-provisioning
+locals {
+  grafana_datasources = templatefile(
+    "${path.module}/../grafana/provisioning/datasources/datasources.yml.tftpl",
+    {
+      prometheus_url = "http://127.0.0.1:9090"
+      region         = var.aws_region
+    }
+  )
+}
+
 resource "aws_s3_object" "grafana_datasources" {
-  bucket = aws_s3_bucket.artifacts.id
-  key    = "grafana/provisioning/datasources/datasources.yml"
-  content = templatefile("${path.module}/../grafana/provisioning/datasources/datasources.yml.tftpl", {
-    prometheus_url = "http://127.0.0.1:9090"
-    region         = var.aws_region
-  })
-  etag = md5(templatefile("${path.module}/../grafana/provisioning/datasources/datasources.yml.tftpl", {
-    prometheus_url = "http://127.0.0.1:9090"
-    region         = var.aws_region
-  }))
+  bucket  = aws_s3_bucket.artifacts.id
+  key     = "grafana/provisioning/datasources/datasources.yml"
+  content = local.grafana_datasources
+  etag    = md5(local.grafana_datasources)
 }
 
 resource "aws_s3_object" "grafana_dashboards_provider" {

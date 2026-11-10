@@ -104,11 +104,6 @@ resource "aws_codebuild_project" "soar" {
       name  = "IMAGE_TAG"
       value = var.soar_image_tag
     }
-
-    environment_variable {
-      name  = "AWS_DEFAULT_REGION"
-      value = var.aws_region
-    }
   }
 
   logs_config {

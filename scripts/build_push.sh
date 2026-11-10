@@ -72,12 +72,6 @@ aws ecs update-service --region "$REGION" \
   --force-new-deployment >/dev/null
 
 info "Wachten tot de service stabiel is (max. 10 minuten)"
-aws ecs wait services-stable --region "$REGION" \
-  --cluster "$CLUSTER" --services "$SERVICE" || {
-  warn "Service nog niet stabiel. Bekijk de gebeurtenissen:"
-  aws ecs describe-services --region "$REGION" --cluster "$CLUSTER" --services "$SERVICE" \
-    --query 'services[0].events[:10].[createdAt,message]' --output table
-  exit 1
-}
+wait_for_service "$REGION" "$CLUSTER" "$SERVICE"
 
 info "Klaar. Uitgerolde tag: ${TAG}"

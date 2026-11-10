@@ -66,15 +66,4 @@ EOF
 info "Database: ${DBNAME} (${ENDPOINT})"
 PARAMS="$(jq -n --arg c "$REMOTE" '{commands: [$c]}')"
 
-CMD="$(aws ssm send-command --region "$REGION" \
-  --instance-ids "$RUNNER" \
-  --document-name AWS-RunShellScript \
-  --comment "CS2 SQL-query (${DBNAME})" \
-  --parameters "$PARAMS" \
-  --query 'Command.CommandId' --output text)"
-
-aws ssm wait command-executed --region "$REGION" --command-id "$CMD" --instance-id "$RUNNER" 2>/dev/null || true
-
-aws ssm get-command-invocation --region "$REGION" \
-  --command-id "$CMD" --instance-id "$RUNNER" \
-  --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
+ssm_run "$RUNNER" "CS2 SQL-query (${DBNAME})" "$PARAMS" "$REGION"

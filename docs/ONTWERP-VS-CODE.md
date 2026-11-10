@@ -21,7 +21,7 @@ Legenda:
 | Workload-VPC `10.20.0.0/16` | `aws_vpc.workload` + private en public subnet | Gerealiseerd |
 | Transit Gateway als hub | `aws_ec2_transit_gateway` met twee attachments en eigen route tables | Gerealiseerd |
 | Zones DMZ / App / Data / Gereserveerd | DMZ `10.10.0.0/24`+`.1.0/24`, App `10.10.16.0/24`+`.17.0/24`, Data `10.10.32.0/24`+`.33.0/24` | Afwijkend: de zoneplannen zijn /20, de subnetten zijn /24-slices zodat elke zone in twee AZ's ligt. De gereserveerde /20 is ongebruikt. |
-| Private DNS `innovatech.internal` | `aws_route53_zone` met beide VPC's; records voor grafana, loki, soar, db, runner | Afwijkend: `prometheus` ontbreekt als naam; de servers gebruiken het vaste IP `10.10.16.10:9090`. |
+| Private DNS `innovatech.internal` | `aws_route53_zone` met beide VPC's; records voor grafana, prometheus, loki, soar, db en runner | Gerealiseerd |
 | Deny-by-default | Security Groups met alleen de benodigde poorten | Afwijkend: NACL's staan op default. Security Groups zijn de leidende control. |
 | Network Firewall in de DMZ | Niet gebouwd; de firewall-API is een simulatie | Niet gebouwd (zie §2) |
 | Geen publieke SSH/RDP | SSM Session Manager; alleen poort 22 van runner naar workload | Gerealiseerd |
@@ -37,7 +37,7 @@ verwerking) en voegt voor de demo weinig zichtbaars toe. Het ontwerp vraagt om
 een **aantoonbare blokkade**. Die is er: de SOAR roept de firewall-API aan,
 de blokkade staat in DynamoDB en de actie wordt geaudit. In productie vervang
 je de Lambda door een aanroep naar Network Firewall of een WAF zonder de
-SOAR-code te wijzigen (alleen `FIREWALL_API_URL`).
+SOAR-code te wijzigen (alleen `FIREWALL_FUNCTION_NAME`).
 
 ### Waarom geen NACL's?
 
@@ -107,16 +107,26 @@ certificaatbeheer en extra kosten te vermijden.
 | Retry met oplopende wachttijd | SQS visibility timeout 30 s → 60 s → 120 s → max 15 min | Gerealiseerd |
 | Acties geïsoleerd | Elke actie heeft eigen foutafhandeling; een fout stopt de andere niet | Gerealiseerd |
 | Audit append-only | S3 met versioning, unieke objectsleutel per verwerking; Aurora-tabel zonder update-pad | Afwijkend: Object Lock staat standaard uit (zie §4). |
-| SOAR zonder beheerrechten | Eigen IAM-rol; alleen DynamoDB, S3, SQS, SNS, CloudWatch, Secrets Manager en `ec2:CreateTags` | Gerealiseerd |
+| SOAR zonder beheerrechten | Eigen IAM-rol; alleen DynamoDB, S3, SQS, SNS, CloudWatch, Lambda, Secrets Manager en `ec2:CreateTags` | Gerealiseerd |
 | Quarantaine | Bewijsstuk in S3 + tag `Quarantine=true` op de instance | Afwijkend: geen automatische netwerkisolatie. Dat zou de demo onbestuurbaar maken; een analist isoleert na controle. |
 | Lambda voor korte acties | Firewall-API is een Lambda in de VPC | Gerealiseerd |
 
-### De firewall-API is publiek bereikbaar
+### De firewall-API is alleen via IAM bereikbaar
 
-De API Gateway heeft een regionaal endpoint en is met een API-key
-beschermd. De Lambda zelf draait in de private app-subnetten. In productie
-hoort hier een private API (execute-api VPC-endpoint) of een WAF voor. Dat is
-bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
+De SOAR roept de firewall-Lambda direct aan met `lambda:InvokeFunction`.
+Er is geen publiek endpoint en geen API-key meer. De Lambda draait in de
+private app-subnetten en schrijft de blokkade naar DynamoDB. In productie kan
+dezelfde functie Network Firewall of een WAF aansturen.
+
+### Codeopbouw
+
+De SOAR-code is in drie lagen gesplitst: `soar/app/engine.py` bevat de pure
+spellogica (normaliseren en regels matchen), `soar/app/effects.py` doet de
+AWS- en databaseaanroepen en `soar/app/main.py` bevat de HTTP-API en de
+SQS-worker. De volledige verwerking staat in `process()` en leest
+van boven naar beneden: event → bevinding → dedupe → regel → acties → audit.
+Zie [`soar/README.md`](../soar/README.md) voor de leesgids en het toevoegen van
+regels.
 
 ---
 
@@ -176,7 +186,7 @@ bewust weggelaten om de demo betaalbaar en eenvoudig te houden.
 |---|---|---|
 | P2-01 Uitval en herstel | Deels | ALB 2 AZ, 2 SOAR-taken, Aurora 2 AZ, 2 workload-AZ's. Failover/RTO niet gemeten. |
 | P2-02 Segmentatie | Ja | Twee VPC's, TGW, SG's, private subnetten. NACL's default. |
-| P2-03 Database en diensten privé | Ja, met uitzondering | Aurora en ALB zijn privé; de firewall-API is publiek met API-key. |
+| P2-03 Database en diensten privé | Ja | Aurora en ALB zijn privé; de firewall-Lambda is alleen via IAM bereikbaar. |
 | P2-04 Private DNS | Ja | Route 53-zone met beide VPC's. |
 | P1-05 Centrale updates | Ja | Wekelijkse workflow + handmatige run; tweede run `changed=0`. |
 | P2-06 Observability-stack | Ja | Grafana, Alloy, Prometheus, Loki, S3. |
@@ -218,11 +228,9 @@ laten werken.
    andere laptop doet, moet de state meenemen of de backend activeren.
 4. **Secrets in state.** De SSH-sleutel en wachtwoorden staan in de
    Terraform-state. Bescherm de state alsof het een geheim is.
-5. **Firewall-API.** Publiek endpoint met API-key. Voor productie: private
-   API of WAF.
-6. **TLS.** Intern HTTP. Voor productie: ACM-certificaat op de ALB en TLS
+5. **TLS.** Intern HTTP. Voor productie: ACM-certificaat op de ALB en TLS
    tussen Alloy en Loki.
-7. **Windows.** Niet gebouwd; het ontwerp noemt Windows wel. De Linux-aanpak
+6. **Windows.** Niet gebouwd; het ontwerp noemt Windows wel. De Linux-aanpak
    is volledig uitgewerkt.
-8. **Object Lock.** Staat uit om `destroy` mogelijk te maken. Voor de
+7. **Object Lock.** Staat uit om `destroy` mogelijk te maken. Voor de
    append-only eis in productie: aanzetten en de retentieperiode accepteren.

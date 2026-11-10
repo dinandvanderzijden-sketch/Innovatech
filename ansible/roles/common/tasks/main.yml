@@ -1,6 +1,36 @@
 ---
-- name: Basisinrichting van een bewaakte server
-  ansible.builtin.import_tasks: packages.yml
+- name: Controleer het besturingssysteem
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "RedHat"
+    fail_msg: "Deze rol is alleen getest op Amazon Linux 2023."
+    quiet: true
 
-- name: Tijdzone en tijdsynchronisatie
-  ansible.builtin.import_tasks: time.yml
+- name: Installeer basispakketten
+  ansible.builtin.dnf:
+    name:
+      - chrony
+      - rsyslog
+      - vim-enhanced
+      - htop
+      - jq
+      - tar
+      - unzip
+      - dnf-plugins-core
+    state: present
+
+- name: Zorg dat rsyslog draait
+  ansible.builtin.service:
+    name: rsyslog
+    state: started
+    enabled: true
+
+- name: Zet de tijdzone op UTC
+  community.general.timezone:
+    name: UTC
+
+- name: Zorg dat chronyd draait
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: true
