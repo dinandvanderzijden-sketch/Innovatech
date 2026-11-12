@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1496" height="1176" viewBox="0 0 1496 1176" font-family="Arial, Helvetica, sans-serif">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24" y="40" font-size="26" font-weight="700" fill="#1a1a1a">Infrastructuur CS2 · overzicht per Terraform-bestand</text>
+<text x="24" y="62" font-size="13" fill="#55606b">Gegenereerd met Rover v0.3.3 op de huidige code (commit 88ca452), na de deploy van 12-11-2026.</text>
+<text x="24" y="90" font-size="13" fill="#1a1a1a"><tspan font-weight="700">194</tspan> resources in 11 Terraform-bestanden · alles uitgerold en ongewijzigd (plan: No changes) · ×n = meerdere exemplaren</text>
+<rect x="24" y="118" width="350" height="1018" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M24,126 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="36" y="140" font-size="14" font-weight="700" fill="#1a1a1a">network.tf</text>
+<rect x="330" y="127" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="346" y="140" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">60</text>
+<text x="36" y="176" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway</tspan> <tspan font-weight="700">this</tspan></text>
+<text x="36" y="192" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route</tspan> <tspan font-weight="700">platform_to_workload</tspan></text>
+<text x="36" y="208" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route</tspan> <tspan font-weight="700">workload_to_platform</tspan></text>
+<text x="36" y="224" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route_table</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="240" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route_table</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="256" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route_table_a…</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="272" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_route_table_a…</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="288" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_vpc_attachment</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="304" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ec2_transit_gateway_vpc_attachment</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="320" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_eip</tspan> <tspan font-weight="700">nat_platform</tspan></text>
+<text x="36" y="336" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_eip</tspan> <tspan font-weight="700">nat_workload</tspan></text>
+<text x="36" y="352" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_internet_gateway</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="368" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_internet_gateway</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="384" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_nat_gateway</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="400" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_nat_gateway</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="416" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_app_nat</tspan></text>
+<text x="36" y="432" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_app_tgw</tspan></text>
+<text x="36" y="448" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_data_nat</tspan></text>
+<text x="36" y="464" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_data_tgw</tspan></text>
+<text x="36" y="480" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_dmz_internet</tspan></text>
+<text x="36" y="496" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">platform_dmz_tgw</tspan></text>
+<text x="36" y="512" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">workload_private_nat</tspan></text>
+<text x="36" y="528" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">workload_private_tgw</tspan></text>
+<text x="36" y="544" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route</tspan> <tspan font-weight="700">workload_public_internet</tspan></text>
+<text x="36" y="560" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table</tspan> <tspan font-weight="700">platform_app</tspan></text>
+<text x="36" y="576" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table</tspan> <tspan font-weight="700">platform_data</tspan></text>
+<text x="36" y="592" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table</tspan> <tspan font-weight="700">platform_dmz</tspan></text>
+<text x="36" y="608" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table</tspan> <tspan font-weight="700">workload_private</tspan></text>
+<text x="36" y="624" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table</tspan> <tspan font-weight="700">workload_public</tspan></text>
+<text x="36" y="640" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_app</tspan></text>
+<text x="36" y="656" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_app[&quot;app-a&quot;]</tspan></text>
+<text x="36" y="672" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_app[&quot;app-b&quot;]</tspan></text>
+<text x="36" y="688" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_data</tspan></text>
+<text x="36" y="704" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_data[&quot;data-a&quot;]</tspan></text>
+<text x="36" y="720" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_data[&quot;data-b&quot;]</tspan></text>
+<text x="36" y="736" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_dmz</tspan></text>
+<text x="36" y="752" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_dmz[&quot;dmz-a&quot;]</tspan></text>
+<text x="36" y="768" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">platform_dmz[&quot;dmz-b&quot;]</tspan></text>
+<text x="36" y="784" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">workload_private</tspan></text>
+<text x="36" y="800" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">workload_private[&quot;workload-a&quot;]</tspan></text>
+<text x="36" y="816" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">workload_private[&quot;workload-b&quot;]</tspan></text>
+<text x="36" y="832" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">workload_public</tspan></text>
+<text x="36" y="848" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route_table_association</tspan> <tspan font-weight="700">workload_public[…]</tspan></text>
+<text x="36" y="864" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="880" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;app-a&quot;]</tspan></text>
+<text x="36" y="896" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;app-b&quot;]</tspan></text>
+<text x="36" y="912" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;data-a&quot;]</tspan></text>
+<text x="36" y="928" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;data-b&quot;]</tspan></text>
+<text x="36" y="944" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;dmz-a&quot;]</tspan></text>
+<text x="36" y="960" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">platform[&quot;dmz-b&quot;]</tspan></text>
+<text x="36" y="976" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">workload_private</tspan></text>
+<text x="36" y="992" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">workload_private[&quot;workload-a&quot;]</tspan></text>
+<text x="36" y="1008" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">workload_private[&quot;workload-b&quot;]</tspan></text>
+<text x="36" y="1024" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">workload_public</tspan></text>
+<text x="36" y="1040" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_subnet</tspan> <tspan font-weight="700">workload_public[…]</tspan></text>
+<text x="36" y="1056" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_vpc</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="36" y="1072" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_vpc</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="36" y="1088" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_vpc_endpoint</tspan> <tspan font-weight="700">dynamodb_platform</tspan></text>
+<text x="36" y="1104" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_vpc_endpoint</tspan> <tspan font-weight="700">s3_platform</tspan></text>
+<text x="36" y="1120" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_vpc_endpoint</tspan> <tspan font-weight="700">s3_workload</tspan></text>
+<rect x="390" y="118" width="350" height="762" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M390,126 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="402" y="140" font-size="14" font-weight="700" fill="#1a1a1a">observability.tf</text>
+<rect x="696" y="127" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="712" y="140" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">50</text>
+<text x="402" y="176" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_budgets_budget</tspan> <tspan font-weight="700">monthly</tspan><tspan font-weight="700" fill="#1d6b3a"> ×2</tspan></text>
+<text x="402" y="192" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_log_group</tspan> <tspan font-weight="700">flow_logs</tspan></text>
+<text x="402" y="208" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">dlq_not_empty</tspan></text>
+<text x="402" y="224" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">soar_5xx</tspan></text>
+<text x="402" y="240" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">soar_errors</tspan></text>
+<text x="402" y="256" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">soar_unhealthy</tspan></text>
+<text x="402" y="272" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">workload_cpu</tspan><tspan font-weight="700" fill="#1d6b3a"> ×3</tspan></text>
+<text x="402" y="288" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_metric_alarm</tspan> <tspan font-weight="700">workload_no_data</tspan><tspan font-weight="700" fill="#1d6b3a"> ×3</tspan></text>
+<text x="402" y="304" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_flow_log</tspan> <tspan font-weight="700">platform</tspan></text>
+<text x="402" y="320" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_flow_log</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="402" y="336" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_instance</tspan> <tspan font-weight="700">observability</tspan></text>
+<text x="402" y="352" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">db</tspan></text>
+<text x="402" y="368" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">grafana</tspan></text>
+<text x="402" y="384" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="400" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">prometheus</tspan></text>
+<text x="402" y="416" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="402" y="432" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_record</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="402" y="448" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_route53_zone</tspan> <tspan font-weight="700">internal</tspan></text>
+<text x="402" y="464" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket</tspan> <tspan font-weight="700">artifacts</tspan></text>
+<text x="402" y="480" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket</tspan> <tspan font-weight="700">audit</tspan></text>
+<text x="402" y="496" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="512" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_lifecycle_configuration</tspan> <tspan font-weight="700">audit</tspan></text>
+<text x="402" y="528" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_lifecycle_configuration</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="544" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_public_access_block</tspan> <tspan font-weight="700">artifacts</tspan></text>
+<text x="402" y="560" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_public_access_block</tspan> <tspan font-weight="700">audit</tspan></text>
+<text x="402" y="576" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_public_access_block</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="592" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_server_side_encryption_…</tspan> <tspan font-weight="700">artifacts</tspan></text>
+<text x="402" y="608" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_server_side_encryption_…</tspan> <tspan font-weight="700">audit</tspan></text>
+<text x="402" y="624" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_server_side_encryption_…</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="640" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_versioning</tspan> <tspan font-weight="700">artifacts</tspan></text>
+<text x="402" y="656" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_versioning</tspan> <tspan font-weight="700">audit</tspan></text>
+<text x="402" y="672" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_bucket_versioning</tspan> <tspan font-weight="700">loki</tspan></text>
+<text x="402" y="688" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_object</tspan> <tspan font-weight="700">grafana_dashboard_operations</tspan></text>
+<text x="402" y="704" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_object</tspan> <tspan font-weight="700">grafana_dashboard_soar</tspan></text>
+<text x="402" y="720" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_object</tspan> <tspan font-weight="700">grafana_dashboards_provider</tspan></text>
+<text x="402" y="736" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_object</tspan> <tspan font-weight="700">grafana_datasources</tspan></text>
+<text x="402" y="752" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret</tspan> <tspan font-weight="700">grafana</tspan></text>
+<text x="402" y="768" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret_version</tspan> <tspan font-weight="700">grafana</tspan></text>
+<text x="402" y="784" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_sns_topic</tspan> <tspan font-weight="700">alerts</tspan></text>
+<text x="402" y="800" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_sns_topic_subscription</tspan> <tspan font-weight="700">email</tspan><tspan font-weight="700" fill="#1d6b3a"> ×2</tspan></text>
+<text x="402" y="816" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">artifacts_bucket</tspan></text>
+<text x="402" y="832" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">grafana_secret</tspan></text>
+<text x="402" y="848" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">log_target</tspan></text>
+<text x="402" y="864" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">loki_bucket</tspan></text>
+<rect x="756" y="118" width="350" height="410" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M756,126 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="768" y="140" font-size="14" font-weight="700" fill="#1a1a1a">iam.tf</text>
+<rect x="1062" y="127" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1078" y="140" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">22</text>
+<text x="768" y="176" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_instance_profile</tspan> <tspan font-weight="700">observability</tspan></text>
+<text x="768" y="192" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_instance_profile</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="768" y="208" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_instance_profile</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="768" y="224" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">ecs_execution</tspan></text>
+<text x="768" y="240" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">firewall_lambda</tspan></text>
+<text x="768" y="256" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">flow_logs</tspan></text>
+<text x="768" y="272" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">observability</tspan></text>
+<text x="768" y="288" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="768" y="304" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">soar_task</tspan></text>
+<text x="768" y="320" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">workload</tspan></text>
+<text x="768" y="336" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">ecs_execution_secrets</tspan></text>
+<text x="768" y="352" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">firewall_lambda</tspan></text>
+<text x="768" y="368" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">flow_logs</tspan></text>
+<text x="768" y="384" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">observability</tspan></text>
+<text x="768" y="400" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="768" y="416" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">soar_task</tspan></text>
+<text x="768" y="432" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">workload_app</tspan></text>
+<text x="768" y="448" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy_attachment</tspan> <tspan font-weight="700">ecs_execution</tspan></text>
+<text x="768" y="464" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy_attachment</tspan> <tspan font-weight="700">firewall_lambda_vpc</tspan></text>
+<text x="768" y="480" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy_attachment</tspan> <tspan font-weight="700">observability_ssm</tspan></text>
+<text x="768" y="496" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy_attachment</tspan> <tspan font-weight="700">runner_ssm</tspan></text>
+<text x="768" y="512" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy_attachment</tspan> <tspan font-weight="700">workload_ssm</tspan></text>
+<rect x="1122" y="118" width="350" height="378" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M1122,126 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="1134" y="140" font-size="14" font-weight="700" fill="#1a1a1a">soar.tf</text>
+<rect x="1428" y="127" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1444" y="140" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">20</text>
+<text x="1134" y="176" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_event_rule</tspan> <tspan font-weight="700">alarm</tspan></text>
+<text x="1134" y="192" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_event_rule</tspan> <tspan font-weight="700">finding</tspan></text>
+<text x="1134" y="208" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_event_target</tspan> <tspan font-weight="700">alarm_sqs</tspan></text>
+<text x="1134" y="224" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_event_target</tspan> <tspan font-weight="700">finding_sqs</tspan></text>
+<text x="1134" y="240" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_log_group</tspan> <tspan font-weight="700">firewall_lambda</tspan></text>
+<text x="1134" y="256" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_log_group</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="272" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_dynamodb_table</tspan> <tspan font-weight="700">blocked_ips</tspan></text>
+<text x="1134" y="288" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_dynamodb_table</tspan> <tspan font-weight="700">dedupe</tspan></text>
+<text x="1134" y="304" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ecr_lifecycle_policy</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="320" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ecr_repository</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="336" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ecs_cluster</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="352" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ecs_service</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="368" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ecs_task_definition</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="384" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lambda_function</tspan> <tspan font-weight="700">firewall_api</tspan></text>
+<text x="1134" y="400" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="416" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb_listener</tspan> <tspan font-weight="700">http</tspan></text>
+<text x="1134" y="432" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb_target_group</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="448" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_sqs_queue</tspan> <tspan font-weight="700">events</tspan></text>
+<text x="1134" y="464" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_sqs_queue</tspan> <tspan font-weight="700">events_dlq</tspan></text>
+<text x="1134" y="480" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_sqs_queue_policy</tspan> <tspan font-weight="700">events</tspan></text>
+<rect x="1122" y="512" width="350" height="218" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M1122,520 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="1134" y="534" font-size="14" font-weight="700" fill="#1a1a1a">web_db.tf</text>
+<rect x="1428" y="521" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1444" y="534" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">10</text>
+<text x="1134" y="570" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_rds_cluster</tspan> <tspan font-weight="700">web</tspan></text>
+<text x="1134" y="586" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_rds_cluster_instance</tspan> <tspan font-weight="700">web</tspan></text>
+<text x="1134" y="602" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_s3_object</tspan> <tspan font-weight="700">webapp</tspan></text>
+<text x="1134" y="618" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret</tspan> <tspan font-weight="700">web_db</tspan></text>
+<text x="1134" y="634" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret_version</tspan> <tspan font-weight="700">web_db</tspan></text>
+<text x="1134" y="650" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">web_db</tspan></text>
+<text x="1134" y="666" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">web_db_host</tspan></text>
+<text x="1134" y="682" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">web_db_name</tspan></text>
+<text x="1134" y="698" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">web_db_secret</tspan></text>
+<text x="1134" y="714" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">random_password</tspan> <tspan font-weight="700">web_db</tspan></text>
+<rect x="756" y="544" width="350" height="138" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M756,552 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="768" y="566" font-size="14" font-weight="700" fill="#1a1a1a">runner.tf</text>
+<rect x="1062" y="553" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1078" y="566" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">7</text>
+<text x="768" y="602" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_instance</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="768" y="618" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_instance</tspan> <tspan font-weight="700">workload</tspan><tspan font-weight="700" fill="#1d6b3a"> ×3</tspan></text>
+<text x="768" y="634" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_key_pair</tspan> <tspan font-weight="700">ansible</tspan></text>
+<text x="768" y="650" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_ssm_parameter</tspan> <tspan font-weight="700">ansible_private_key</tspan></text>
+<text x="768" y="666" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">tls_private_key</tspan> <tspan font-weight="700">ansible</tspan></text>
+<rect x="756" y="698" width="350" height="170" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M756,706 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="768" y="720" font-size="14" font-weight="700" fill="#1a1a1a">security.tf</text>
+<rect x="1062" y="707" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1078" y="720" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">7</text>
+<text x="768" y="756" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">alb</tspan></text>
+<text x="768" y="772" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">aurora</tspan></text>
+<text x="768" y="788" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">lambda</tspan></text>
+<text x="768" y="804" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">observability</tspan></text>
+<text x="768" y="820" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">runner</tspan></text>
+<text x="768" y="836" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="768" y="852" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_security_group</tspan> <tspan font-weight="700">workload</tspan></text>
+<rect x="1122" y="746" width="350" height="154" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M1122,754 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="1134" y="768" font-size="14" font-weight="700" fill="#1a1a1a">database.tf</text>
+<rect x="1428" y="755" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1444" y="768" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">6</text>
+<text x="1134" y="804" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_db_subnet_group</tspan> <tspan font-weight="700">aurora</tspan></text>
+<text x="1134" y="820" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_rds_cluster</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="1134" y="836" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_rds_cluster_instance</tspan> <tspan font-weight="700">reader</tspan></text>
+<text x="1134" y="852" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_rds_cluster_instance</tspan> <tspan font-weight="700">writer</tspan></text>
+<text x="1134" y="868" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret</tspan> <tspan font-weight="700">db</tspan></text>
+<text x="1134" y="884" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_secretsmanager_secret_version</tspan> <tspan font-weight="700">db</tspan></text>
+<rect x="756" y="884" width="350" height="106" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M756,892 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="768" y="906" font-size="14" font-weight="700" fill="#1a1a1a">web.tf</text>
+<rect x="1062" y="893" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1078" y="906" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">5</text>
+<text x="768" y="942" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb_listener</tspan> <tspan font-weight="700">web</tspan></text>
+<text x="768" y="958" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb_target_group</tspan> <tspan font-weight="700">web</tspan></text>
+<text x="768" y="974" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_lb_target_group_attachment</tspan> <tspan font-weight="700">web</tspan><tspan font-weight="700" fill="#1d6b3a"> ×3</tspan></text>
+<rect x="390" y="896" width="350" height="122" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M390,904 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="402" y="918" font-size="14" font-weight="700" fill="#1a1a1a">codebuild.tf</text>
+<rect x="696" y="905" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="712" y="918" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">4</text>
+<text x="402" y="954" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_cloudwatch_log_group</tspan> <tspan font-weight="700">codebuild</tspan></text>
+<text x="402" y="970" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_codebuild_project</tspan> <tspan font-weight="700">soar</tspan></text>
+<text x="402" y="986" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role</tspan> <tspan font-weight="700">codebuild</tspan></text>
+<text x="402" y="1002" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">aws_iam_role_policy</tspan> <tspan font-weight="700">codebuild</tspan></text>
+<rect x="1122" y="916" width="350" height="106" rx="8" fill="#ffffff" stroke="#cfd6dd"/>
+<path d="M1122,924 a8,8 0 0 1 8,-8 h334 a8,8 0 0 1 8,8 v26 h-350 z" fill="#eef1f4"/>
+<text x="1134" y="938" font-size="14" font-weight="700" fill="#1a1a1a">main.tf</text>
+<rect x="1428" y="925" width="32" height="18" rx="9" fill="#1d6b3a"/>
+<text x="1444" y="938" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+<text x="1134" y="974" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">random_id</tspan> <tspan font-weight="700">bucket</tspan></text>
+<text x="1134" y="990" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">random_password</tspan> <tspan font-weight="700">db</tspan></text>
+<text x="1134" y="1006" font-size="11" fill="#1a1a1a"><tspan font-family="Courier New, monospace" fill="#6b7480">random_password</tspan> <tspan font-weight="700">grafana</tspan></text>
+</svg>
