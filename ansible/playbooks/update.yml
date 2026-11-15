@@ -42,12 +42,20 @@
         mode: "0644"
       changed_when: false
 
+    - name: Haal het rapport op naar de runner
+      ansible.builtin.fetch:
+        src: "/tmp/cs2-update-{{ inventory_hostname }}.json"
+        dest: "/tmp/cs2-reports/"
+        flat: true
+      changed_when: false
+
     - name: Upload het rapport naar S3
       ansible.builtin.command:
         cmd: >-
-          aws s3 cp /tmp/cs2-update-{{ inventory_hostname }}.json
+          aws s3 cp /tmp/cs2-reports/cs2-update-{{ inventory_hostname }}.json
           s3://{{ artifacts_bucket }}/reports/{{ ansible_date_time.iso8601_basic_short }}-{{ inventory_hostname }}.json
           --region {{ aws_region }}
+      delegate_to: localhost
       changed_when: false
 
     - name: Meld dat de update-ronde klaar is
