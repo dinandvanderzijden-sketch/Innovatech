@@ -1,6 +1,6 @@
 {
   "uid": "cs2-soar",
-  "title": "CS2 \u2014 SOAR",
+  "title": "CS2 — SOAR",
   "tags": [
     "cs2",
     "soar"
@@ -77,12 +77,17 @@
           "region": "eu-central-1",
           "period": "300",
           "dimensions": {
-            "ServiceName": "cs2-dev-soar"
+            "ServiceName": [
+              "cs2-dev-soar"
+            ]
           },
           "matchExact": true,
           "expression": "",
           "id": "",
-          "alias": ""
+          "alias": "",
+          "queryMode": "Metrics",
+          "metricEditorMode": 0,
+          "metricQueryType": 0
         }
       ]
     },
@@ -143,12 +148,17 @@
           "region": "eu-central-1",
           "period": "300",
           "dimensions": {
-            "ServiceName": "cs2-dev-soar"
+            "ServiceName": [
+              "cs2-dev-soar"
+            ]
           },
           "matchExact": true,
           "expression": "",
           "id": "",
-          "alias": ""
+          "alias": "",
+          "queryMode": "Metrics",
+          "metricEditorMode": 0,
+          "metricQueryType": 0
         }
       ]
     },
@@ -209,12 +219,17 @@
           "region": "eu-central-1",
           "period": "300",
           "dimensions": {
-            "ServiceName": "cs2-dev-soar"
+            "ServiceName": [
+              "cs2-dev-soar"
+            ]
           },
           "matchExact": true,
           "expression": "",
           "id": "",
-          "alias": ""
+          "alias": "",
+          "queryMode": "Metrics",
+          "metricEditorMode": 0,
+          "metricQueryType": 0
         }
       ]
     },
@@ -267,19 +282,24 @@
           "region": "eu-central-1",
           "period": "60",
           "dimensions": {
-            "QueueName": "cs2-dev-soar-events"
+            "QueueName": [
+              "cs2-dev-soar-events"
+            ]
           },
           "matchExact": true,
           "expression": "",
           "id": "",
-          "alias": ""
+          "alias": "",
+          "queryMode": "Metrics",
+          "metricEditorMode": 0,
+          "metricQueryType": 0
         }
       ]
     },
     {
       "id": 5,
       "type": "timeseries",
-      "title": "ALB \u2014 5XX-responsen",
+      "title": "ALB — 5XX-responsen",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -328,7 +348,10 @@
           "matchExact": false,
           "expression": "",
           "id": "",
-          "alias": ""
+          "alias": "",
+          "queryMode": "Metrics",
+          "metricEditorMode": 0,
+          "metricQueryType": 0
         }
       ]
     }
