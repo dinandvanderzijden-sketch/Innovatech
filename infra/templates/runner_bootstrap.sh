@@ -8,7 +8,8 @@ exec > >(tee -a /var/log/cs2-bootstrap.log | logger -t cs2-runner-bootstrap -s 2
 REGION="${region}"
 PARAM_PREFIX="${param_prefix}"
 
-dnf install -y docker git jq unzip tar python3.11 python3.11-pip awscli-2
+dnf install -y docker git jq unzip tar python3.11 python3.11-pip awscli-2 \
+  libicu # nodig voor de .NET-runtime van de Actions-runner
 systemctl enable --now docker
 usermod -aG docker ec2-user
 

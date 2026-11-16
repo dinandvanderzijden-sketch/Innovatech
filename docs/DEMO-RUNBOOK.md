@@ -43,7 +43,7 @@ LO1 netwerk en scheiding · LO2 SOAR · LO3 updates, IaC en CI/CD · **oranje = 
 |---|---|---|
 | 13 | **TEST 3** · Run uit stap 1 → job **Ansible-update** → stap *Tweede run moet changed=0 opleveren* → PLAY RECAP<br>*→ changed=0 op 10.20.27.246 en 10.20.39.19* | LO3 |
 | 14 | `aws s3 ls s3://cs2-dev-artifacts-4ea35500/reports/ \| sort \| tail -4`<br>*→ twee nieuwe JSON-rapporten* | LO3 |
-| 15 | `terraform -chdir=infra plan -detailed-exitcode`<br>`echo "exit=$?"`<br>*→ No changes · exit=0* | LO3 |
+| 15 | `terraform -chdir=infra plan -detailed-exitcode`<br>`echo "exit=$status"`<br>*→ No changes · exit=0* | LO3 |
 | 16 | `git add -A`<br>`git commit -m "demo: …"`<br>`git push origin main`<br>*→ Actions → Tests en validatie groen · uitrol ca. 15 min* | LO3 |
 
 ### Afsluiten
