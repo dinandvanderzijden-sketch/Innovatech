@@ -23,10 +23,10 @@ LO1 netwerk en scheiding · LO2 SOAR · LO3 updates, IaC en CI/CD · **oranje = 
 |---|---|---|
 | 3 | Open **http://localhost:8081** en ververs 2× (tunnel: `./scripts/port-forward.sh web`)<br>*→ hostnaam en AZ wisselen; bericht blijft staan* | LO1 |
 | 4 | Console → **VPC → Your VPCs**, filter *Project = cs2*<br>*→ twee VPC's: 10.10.0.0/16 en 10.20.0.0/16* | LO1 |
-| 5 | Console → **VPC → Transit gateway attachments**<br>*→ twee attachments, state available* | LO1 |
+| 5 | Console → **VPC → Transit gateways → cs2-dev-tgw** → tab **VPC attachments**<br>*→ twee attachments: platform + workload, available* | LO1 |
 | 6 | Console → **EC2 → Instances**, filter *Project = cs2*<br>*→ lege kolom Public IPv4* | LO1 |
-| 7 | Console → **Route 53 → innovatech.internal** → record *db*<br>*→ waarde 10.10.32.187* | LO1 |
-| 8 | **TEST 1** · **tab 1:** `aws ssm start-session --target i-01f5046dfd9fc024e`<br>**tab 2:** `aws ssm start-session --target i-0203abb6391845ddc`<br>`timeout 5 bash -c '</dev/tcp/db.innovatech.internal/5432' 2>/dev/null && echo VERBONDEN \|\| echo GEEN VERBINDING`<br>*→ tab 1: GEEN VERBINDING · tab 2: VERBONDEN* | LO1 |
+| 7 | Console → **Route 53 → innovatech.internal** → record *db*<br>*→ CNAME naar cs2-dev-aurora.cluster-… (private)* | LO1 |
+| 8 | **TEST 1** · **tab 1:** `aws ssm start-session --target i-0a4b1bca1751684d9`<br>**tab 2:** `aws ssm start-session --target i-0a8c81dbd9c8a1960`<br>`timeout 5 bash -c '</dev/tcp/db.innovatech.internal/5432' 2>/dev/null && echo VERBONDEN \|\| echo GEEN VERBINDING`<br>*→ tab 1: GEEN VERBINDING · tab 2: VERBONDEN* | LO1 |
 
 ### SOAR — LO2
 
@@ -41,8 +41,8 @@ LO1 netwerk en scheiding · LO2 SOAR · LO3 updates, IaC en CI/CD · **oranje = 
 
 | # | Commando of actie | LO |
 |---|---|---|
-| 13 | **TEST 3** · Run uit stap 1 → job **Ansible-update** → stap *Tweede run moet changed=0 opleveren* → PLAY RECAP<br>*→ changed=0 op 10.20.22.134 en 10.20.41.231* | LO3 |
-| 14 | `aws s3 ls s3://cs2-dev-artifacts-84583cee/reports/ \| sort \| tail -4`<br>*→ twee nieuwe JSON-rapporten* | LO3 |
+| 13 | **TEST 3** · Run uit stap 1 → job **Ansible-update** → stap *Tweede run moet changed=0 opleveren* → PLAY RECAP<br>*→ changed=0 op 10.20.27.246 en 10.20.39.19* | LO3 |
+| 14 | `aws s3 ls s3://cs2-dev-artifacts-4ea35500/reports/ \| sort \| tail -4`<br>*→ twee nieuwe JSON-rapporten* | LO3 |
 | 15 | `terraform -chdir=infra plan -detailed-exitcode`<br>`echo "exit=$?"`<br>*→ No changes · exit=0* | LO3 |
 | 16 | `git add -A`<br>`git commit -m "demo: …"`<br>`git push origin main`<br>*→ Actions → Tests en validatie groen · uitrol ca. 15 min* | LO3 |
 

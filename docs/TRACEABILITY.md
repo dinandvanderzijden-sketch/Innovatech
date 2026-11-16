@@ -6,7 +6,7 @@
 | Requirement | LO | Stap | Type | Verwacht resultaat | Bewijs in portfolio |
 |---|---|---|---|---|---|
 | **P2-02 — segmentatie** | LO1 | 4, 5, 6 | Werkend onderdeel | Twee VPC's, Transit Gateway, geen publieke IP's op de servers | Testplan §8.3 (P2-02, P2-03); Design 01 |
-| **P2-04 — private DNS** | LO1 | 7 | Werkend onderdeel | `db.innovatech.internal` lost op naar `10.10.32.187` | Testplan §8.3 (P2-04); Design 01 |
+| **P2-04 — private DNS** | LO1 | 7 | Werkend onderdeel | `db.innovatech.internal` is een CNAME naar `cs2-dev-aurora.cluster-…` (private) | Testplan §8.3 (P2-04); Design 01 |
 | **P2-03 — private database** | LO1 | 8 | **Test T1 (negatief)** | Workload krijgt geen verbinding op 5432; runner wel | Testplan §8.3 (P2-03); Design 01/04 |
 | **P2-08 — SOAR-monitoring** | LO2 | 9 | Werkend onderdeel | Dashboard toont verwerkte events, acties en fouten | Testplan §8.3 (P2-08, P2-09); dashboard **CS2 — SOAR**; Design 06 |
 | **P2-06 — event-driven SOAR** | LO2 | 10, 11, 12 | **Test T2 (TC-03)** | Brute-force → R-110 → IP-blokkade binnen 15 s + notificatie + audit | Testplan §8.2 (TC-03); SOAR-playbook |
