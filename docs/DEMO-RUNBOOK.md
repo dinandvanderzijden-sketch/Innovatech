@@ -26,7 +26,7 @@ LO1 netwerk en scheiding · LO2 SOAR · LO3 updates, IaC en CI/CD · **oranje = 
 | 5 | Console → **VPC → Transit gateways → cs2-dev-tgw** → tab **VPC attachments**<br>*→ twee attachments: platform + workload, available* | LO1 |
 | 6 | Console → **EC2 → Instances**, filter *Project = cs2*<br>*→ lege kolom Public IPv4* | LO1 |
 | 7 | Console → **Route 53 → innovatech.internal** → record *db*<br>*→ CNAME naar cs2-dev-aurora.cluster-… (private)* | LO1 |
-| 8 | **TEST 1** · **tab 1:** `aws ssm start-session --target i-0a4b1bca1751684d9`<br>**tab 2:** `aws ssm start-session --target i-0a8c81dbd9c8a1960`<br>`timeout 5 bash -c '</dev/tcp/db.innovatech.internal/5432' 2>/dev/null && echo VERBONDEN \|\| echo GEEN VERBINDING`<br>*→ tab 1: GEEN VERBINDING · tab 2: VERBONDEN* | LO1 |
+| 8 | **TEST 1** · **tab 1:** `aws ssm start-session --target i-0a4b1bca1751684d9`<br>**tab 2:** `aws ssm start-session --target i-0f623a5bded5f5e37`<br>`timeout 5 bash -c '</dev/tcp/db.innovatech.internal/5432' 2>/dev/null && echo VERBONDEN \|\| echo GEEN VERBINDING`<br>*→ tab 1: GEEN VERBINDING · tab 2: VERBONDEN* | LO1 |
 
 ### SOAR — LO2
 
